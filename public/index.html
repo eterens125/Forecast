@@ -6,6 +6,7 @@
 <title>Azure Sales Forecast</title>
 </head>
 <body>
+
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root {
@@ -237,6 +238,21 @@
     white-space: nowrap;
   }
   .events-list .ev .desc { color: var(--muted); }
+  .events-list .ev .cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    height: fit-content;
+  }
+  .cat-holiday { background: rgba(107, 91, 149, 0.16); color: #8a76c9; }
+  .cat-promo { background: rgba(47, 158, 68, 0.16); color: #3fb35c; }
+  .cat-sports { background: rgba(209, 122, 34, 0.16); color: #d17a22; }
+  .cat-school { background: rgba(31, 122, 140, 0.16); color: #2e9bb0; }
+  .cat-ops { background: rgba(120, 120, 120, 0.16); color: #8a8a8a; }
   .events-caveat {
     font-size: 12.5px;
     color: var(--muted);
@@ -580,56 +596,63 @@ const FLAGGED_DAYS = {
   wk5: {},
 };
 
-const SPORTS_EVENTS = {
+const CALENDAR_EVENTS = {
   wk1: {
-    title: "Major sporting events this week",
+    title: "Week at a Glance",
     events: [
-      ["Wed 9/9", "NFL season opener — Patriots @ Seahawks, primetime (NBC)."],
-      ["Thu 9/10", "NFL Week 1 — 49ers vs. Rams, international game in Melbourne, Australia (Netflix)."],
-      ["Sat 9/12", "Major college football Saturday (Week 2) + Noche UFC: Silva vs. Delgado (Paramount+)."],
-      ["Sun 9/13", "NFL Week 1 full Sunday slate — 13 games, including Cowboys @ Giants in primetime (NBC)."],
+      ["Mon 9/7", "Holiday", "Labor Day (US holiday) — Okaloosa & Santa Rosa Co. schools closed."],
+      ["Wed 9/9", "Sports", "NFL season opener — Patriots @ Seahawks, primetime (NBC)."],
+      ["Thu 9/10", "Sports", "NFL Week 1 — 49ers vs. Rams, international game in Melbourne, Australia (Netflix)."],
+      ["Sat 9/12", "Sports", "Major college football Saturday (Week 2) + Noche UFC: Silva vs. Delgado (Paramount+)."],
+      ["Sun 9/13", "Sports", "NFL Week 1 full Sunday slate — 13 games, including Cowboys @ Giants in primetime (NBC)."],
     ],
-    caveat: "The 2025 NFL season opened Sep 4 — about 5 days earlier than this year's Sep 9 opener — so last year's comparator week (ending 9/14/25) was already NFL Week 2, not opening weekend. The YoY growth rate above may understate this year's kickoff-weekend lift, particularly Sat 9/12 and Sun 9/13.",
+    caveat: "The 2025 NFL season opened Sep 4 — about 5 days earlier than this year's Sep 9 opener — so last year's comparator week (ending 9/14/25) was already NFL Week 2, not opening weekend. The YoY growth rate above may understate this year's kickoff-weekend lift, particularly Sat 9/12 and Sun 9/13. No Domino's national promo calendar entries were confirmed as active this week as of the 9/30 marketing bulletin.",
   },
   wk2: {
-    title: "Major sporting events this week",
+    title: "Week at a Glance",
     events: [
-      ["Mon 9/14", "NFL Week 1 Monday Night Football — Broncos @ Chiefs (ESPN)."],
-      ["Thu 9/17", "NFL Week 2 Thursday Night Football — Lions @ Bills (Prime Video)."],
-      ["Sat 9/19", "Major college football Saturday (Week 3) + UFC 331: Van vs. Pantoja, Los Angeles."],
-      ["Sun 9/20", "NFL Week 2 full Sunday slate."],
+      ["Mon 9/14", "Sports", "NFL Week 1 Monday Night Football — Broncos @ Chiefs (ESPN)."],
+      ["Thu 9/17", "Sports", "NFL Week 2 Thursday Night Football — Lions @ Bills (Prime Video)."],
+      ["Sat 9/19", "Sports", "Major college football Saturday (Week 3) + UFC 331: Van vs. Pantoja, Los Angeles."],
+      ["Sun 9/20", "Sports", "NFL Week 2 full Sunday slate."],
     ],
-    caveat: "Last year's comparator week (ending 9/21/25) was NFL Week 3; this year's week still carries Week 1's Monday nightcap plus Week 2, closer to season kickoff. Same caveat as Week 1 — treat Sat 9/19 and Sun 9/20 as having modest upside risk versus the model.",
+    caveat: "Last year's comparator week (ending 9/21/25) was NFL Week 3; this year's week still carries Week 1's Monday nightcap plus Week 2, closer to season kickoff. Same caveat as Week 1 — treat Sat 9/19 and Sun 9/20 as having modest upside risk versus the model. No holidays (school in session both districts) or confirmed Domino's national promos this week.",
   },
   wk3: {
-    title: "Major sporting events this week",
+    title: "Week at a Glance",
     events: [
-      ["Thu 9/24", "NFL Week 3 Thursday Night Football — Falcons @ Packers (Prime Video)."],
-      ["Sat 9/26", "Major college football Saturday — Texas @ Tennessee, Oklahoma @ Georgia, Ole Miss @ Florida, Texas A&M @ LSU (SEC-heavy slate)."],
-      ["Sun 9/27", "NFL Week 3 full Sunday slate, including Rams @ Broncos in primetime (NBC)."],
-      ["Mon 9/28", "NFL Week 3 Monday Night Football — Eagles @ Bears (ESPN), just after this forecast week ends."],
+      ["Thu 9/24", "Sports", "NFL Week 3 Thursday Night Football — Falcons @ Packers (Prime Video)."],
+      ["Sat 9/26", "Sports", "Major college football Saturday — Texas @ Tennessee, Oklahoma @ Georgia, Ole Miss @ Florida, Texas A&M @ LSU (SEC-heavy slate)."],
+      ["Sun 9/27", "Sports", "NFL Week 3 full Sunday slate, including Rams @ Broncos in primetime (NBC)."],
+      ["Mon 9/28", "Sports", "NFL Week 3 Monday Night Football — Eagles @ Bears (ESPN), just after this forecast week ends."],
     ],
-    caveat: "Last year's comparator week (ending 9/28/25) fell in an NFL Week 3/4 transition with a lighter non-conference college slate; this year's week pairs a full NFL Week 3 with an SEC-heavy college Saturday, typically a stronger sports-viewing week than the norm. Treat this as mild upside risk versus the model, concentrated Thu 9/24 and Sat 9/26–Sun 9/27. Separately: the YoY growth / seasonal-forecast signal now uses a 6-week comparison window (was 8) so it reacts faster to the above-trend YoY increase seen in the week of 9/7–13.",
+    caveat: "Last year's comparator week (ending 9/28/25) fell in an NFL Week 3/4 transition with a lighter non-conference college slate; this year's week pairs a full NFL Week 3 with an SEC-heavy college Saturday, typically a stronger sports-viewing week than the norm. Treat this as mild upside risk versus the model, concentrated Thu 9/24 and Sat 9/26–Sun 9/27. Separately: the YoY growth / seasonal-forecast signal now uses a 6-week comparison window (was 8) so it reacts faster to the above-trend YoY increase seen in the week of 9/7–13. No holidays or confirmed Domino's national promos this week.",
   },
   wk4: {
-    title: "Major sporting events this week",
+    title: "Week at a Glance",
     events: [
-      ["Thu 10/1", "NFL Week 4 Thursday Night Football — Steelers @ Browns (Prime Video)."],
-      ["Fri 10/2", "College football — Penn State @ Northwestern (FOX), 8pm."],
-      ["Sat 10/3", "Major college football Saturday — Alabama @ Mississippi State, Auburn @ Tennessee, Arkansas @ Texas A&M (SEC-heavy), plus Ohio State @ Iowa and Notre Dame @ North Carolina."],
-      ["Sun 10/4", "NFL Week 4 full Sunday slate (14 games), including a London game (Colts @ Commanders, 9:30am) and Lions @ Panthers in Sunday Night Football (NBC)."],
+      ["Thu 10/1", "Sports", "NFL Week 4 Thursday Night Football — Steelers @ Browns (Prime Video)."],
+      ["Fri 10/2", "Sports", "College football — Penn State @ Northwestern (FOX), 8pm."],
+      ["Sat 10/3", "Sports", "Major college football Saturday — Alabama @ Mississippi State, Auburn @ Tennessee, Arkansas @ Texas A&M (SEC-heavy), plus Ohio State @ Iowa and Notre Dame @ North Carolina."],
+      ["Sat 10/3", "Ops", "Scheduled Michigan data center maintenance, 2-10am EDT — overnight window, minimal customer-facing impact expected."],
+      ["Sun 10/4", "Sports", "NFL Week 4 full Sunday slate (14 games), including a London game (Colts @ Commanders, 9:30am) and Lions @ Panthers in Sunday Night Football (NBC)."],
+      ["Thu 10/4", "Promo", "Domino's Reward Challenge ends today (loyalty/rewards promotion, live nationally through 10/4)."],
+      ["Mon 9/28–Sun 10/4", "Promo", "Domino's National Marketing Support Extended is live (through 11/15) — elevated national marketing spend in-market for the remainder of this window."],
     ],
-    caveat: "Last year's comparator week (ending 10/5/25) was also a full NFL Week 4/5-adjacent slate with a normal college schedule — unlike the season-kickoff weeks earlier in this forecast series, this comparison isn't expected to carry a material season-timing skew. NFL's Monday Night game (Falcons @ Saints, 10/5) falls just after this forecast week ends, same pattern as prior weeks. The YoY / seasonal-forecast signal keeps the shortened 6-week comparison window, now spanning both of the recent above-trend weeks (9/13 and 9/20 both beat forecast).",
+    caveat: "Last year's comparator week (ending 10/5/25) was also a full NFL Week 4/5-adjacent slate with a normal college schedule — unlike the season-kickoff weeks earlier in this forecast series, this comparison isn't expected to carry a material season-timing skew. NFL's Monday Night game (Falcons @ Saints, 10/5) falls just after this forecast week ends, same pattern as prior weeks. The YoY / seasonal-forecast signal keeps the shortened 6-week comparison window, now spanning both of the recent above-trend weeks (9/13 and 9/20 both beat forecast). Promo/ops items sourced from a corporate marketing bulletin received 9/30 — the model's blend doesn't explicitly account for the Reward Challenge or the extended marketing support, so any lift from those is upside risk versus the forecast, concentrated toward the end of this week.",
   },
   wk5: {
-    title: "Major sporting events this week",
+    title: "Week at a Glance",
     events: [
-      ["Thu 10/8", "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)."],
-      ["Fri 10/9", "MLB Division Series — potential decisive NLDS Game 5s."],
-      ["Sat 10/10", "MLB Division Series — potential decisive ALDS Game 5s."],
-      ["Sun 10/11", "NFL Week 5 full Sunday slate (13 games), including a London game (Eagles @ Jaguars, 9:30am) and Ravens @ Falcons in Sunday Night Football (NBC), plus MLB's NLCS Game 1."],
+      ["Mon 10/5–Sun 10/11", "Promo", "50% Off Boost Week — sitewide 50% off menu-priced pizzas, live nationally all week (per corporate marketing bulletin received 9/30)."],
+      ["Mon 10/5–Sun 10/11", "Promo", "Domino's National Marketing Support Extended continues (live through 11/15) — elevated national marketing spend in-market all week."],
+      ["Thu 10/8", "Sports", "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)."],
+      ["Fri 10/9", "Sports", "MLB Division Series — potential decisive NLDS Game 5s."],
+      ["Sat 10/10", "Sports", "MLB Division Series — potential decisive ALDS Game 5s."],
+      ["Sun 10/11", "Sports", "NFL Week 5 full Sunday slate (13 games), including a London game (Eagles @ Jaguars, 9:30am) and Ravens @ Falcons in Sunday Night Football (NBC), plus MLB's NLCS Game 1."],
+      ["Mon 10/12", "School", "Just after this week ends: Student Holiday (no school) districtwide in both Okaloosa & Santa Rosa Co. — may lift the following week's daily pattern."],
     ],
-    caveat: "MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm, similar in kind to the Week of Sept 28 forecast. Last year's comparator week (ending 10/12/25) fell during the 2025 ALCS/NLCS window too, so the postseason overlap is roughly comparable year over year. Separately: the YoY / seasonal-forecast signal reverts to the standard 8-week comparison window this week (was the shortened 6-week window for the last two forecasts) — actual YoY growth has been decelerating for three straight weeks (+12.6%, +11.0%, +4.0%), the opposite of the acceleration that window was built to track.",
+    caveat: "IMPORTANT: this week carries a sitewide 50% Off Boost Week promo (all 7 days), confirmed via a corporate marketing bulletin received 9/30 — none of the three blended signals (trend, recency, seasonal/YoY) know about this discount, so the $162,004 forecast should be treated as a floor, not a ceiling. Public reporting shows Domino's has run similar 50%-off 'Boost Week' promotions at irregular intervals (not a fixed annual October slot), so there's no strong evidence last year's comparator week (ending 10/12/25) carried the same discount — meaning the YoY/seasonal signal likely doesn't have this promo baked in either, and the true upside could be larger than a simple YoY adjustment suggests. Separately: MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm. Last year's comparator week fell during the 2025 ALCS/NLCS window too, so that piece is roughly comparable year over year.",
   },
 };
 
@@ -705,12 +728,12 @@ function render(wkKey) {
     </div>
   `;
 
-  // sporting events banner
-  const evData = SPORTS_EVENTS[wkKey];
+  // week-at-a-glance calendar banner
+  const evData = CALENDAR_EVENTS[wkKey];
   document.getElementById("events-banner").innerHTML = `
     <div class="events-title">${evData.title}</div>
     <div class="events-list">
-      ${evData.events.map(([day, desc]) => `<div class="ev"><span class="day">${day}</span><span class="desc">${desc}</span></div>`).join("")}
+      ${evData.events.map(([day, cat, desc]) => `<div class="ev"><span class="cat cat-${cat.toLowerCase()}">${cat}</span><span class="day">${day}</span><span class="desc">${desc}</span></div>`).join("")}
     </div>
     <div class="events-caveat">${evData.caveat}</div>
   `;
