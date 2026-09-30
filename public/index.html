@@ -219,40 +219,117 @@
     color: var(--warn);
     margin-bottom: 10px;
   }
-  .events-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 8px 20px;
+  .cat-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; flex: none; }
+  .cat-holiday-dot { background: #8a76c9; }
+  .cat-promo-dot { background: #3fb35c; }
+  .cat-sports-dot { background: #d17a22; }
+  .cat-school-dot { background: #2e9bb0; }
+  .cat-ops-dot { background: #8a8a8a; }
+
+  .cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11.5px;
+    color: var(--muted);
     margin-bottom: 12px;
   }
-  .events-list .ev {
-    font-size: 13px;
-    line-height: 1.5;
+  .cal-legend span { display: inline-flex; align-items: center; }
+
+  .cal-banners { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .cal-banner {
+    font-size: 12.5px;
+    line-height: 1.45;
+    padding: 7px 12px;
+    border-radius: 8px;
     display: flex;
-    gap: 8px;
+    align-items: baseline;
+    gap: 6px;
   }
-  .events-list .ev .day {
-    font-family: "IBM Plex Mono", monospace;
-    font-weight: 600;
-    color: var(--ink);
-    white-space: nowrap;
-  }
-  .events-list .ev .desc { color: var(--muted); }
-  .events-list .ev .cat {
+  .cal-banner .cat-tag {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 1px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    height: fit-content;
+    flex: none;
   }
-  .cat-holiday { background: rgba(107, 91, 149, 0.16); color: #8a76c9; }
-  .cat-promo { background: rgba(47, 158, 68, 0.16); color: #3fb35c; }
-  .cat-sports { background: rgba(209, 122, 34, 0.16); color: #d17a22; }
-  .cat-school { background: rgba(31, 122, 140, 0.16); color: #2e9bb0; }
-  .cat-ops { background: rgba(120, 120, 120, 0.16); color: #8a8a8a; }
+  .cal-banner.cat-holiday { background: rgba(107, 91, 149, 0.14); }
+  .cal-banner.cat-holiday .cat-tag { color: #8a76c9; }
+  .cal-banner.cat-promo { background: rgba(47, 158, 68, 0.14); }
+  .cal-banner.cat-promo .cat-tag { color: #3fb35c; }
+  .cal-banner.cat-sports { background: rgba(209, 122, 34, 0.14); }
+  .cal-banner.cat-sports .cat-tag { color: #d17a22; }
+  .cal-banner.cat-school { background: rgba(31, 122, 140, 0.14); }
+  .cal-banner.cat-school .cat-tag { color: #2e9bb0; }
+  .cal-banner.cat-ops { background: rgba(120, 120, 120, 0.14); }
+  .cal-banner.cat-ops .cat-tag { color: #8a8a8a; }
+  .cal-banner .desc { color: var(--ink); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .cal-day {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 6px;
+    min-height: 66px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cal-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    margin-bottom: 1px;
+  }
+  .cal-day-head .cal-date {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .cal-chip {
+    font-size: 11px;
+    line-height: 1.35;
+    display: flex;
+    align-items: flex-start;
+    cursor: default;
+  }
+  .cal-chip .desc { color: var(--muted); }
+  .cal-footnote {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .cal-footnote .cat-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #2e9bb0;
+    flex: none;
+  }
+  @media (max-width: 720px) {
+    .cal-grid { grid-template-columns: repeat(1, 1fr); }
+    .cal-day-head { font-size: 11px; }
+  }
   .events-caveat {
     font-size: 12.5px;
     color: var(--muted);
@@ -596,63 +673,75 @@ const FLAGGED_DAYS = {
   wk5: {},
 };
 
+// col: 0=Mon .. 6=Sun. banners span the full week (rendered above the grid as ribbons).
+// footnote: a date just outside this week's 7-day grid, worth flagging anyway.
 const CALENDAR_EVENTS = {
   wk1: {
     title: "Week at a Glance",
-    events: [
-      ["Mon 9/7", "Holiday", "Labor Day (US holiday) — Okaloosa & Santa Rosa Co. schools closed."],
-      ["Wed 9/9", "Sports", "NFL season opener — Patriots @ Seahawks, primetime (NBC)."],
-      ["Thu 9/10", "Sports", "NFL Week 1 — 49ers vs. Rams, international game in Melbourne, Australia (Netflix)."],
-      ["Sat 9/12", "Sports", "Major college football Saturday (Week 2) + Noche UFC: Silva vs. Delgado (Paramount+)."],
-      ["Sun 9/13", "Sports", "NFL Week 1 full Sunday slate — 13 games, including Cowboys @ Giants in primetime (NBC)."],
+    banners: [],
+    days: [
+      { col: 0, date: "9/7", cat: "Holiday", text: "Labor Day (US holiday) — Okaloosa & Santa Rosa Co. schools closed." },
+      { col: 2, date: "9/9", cat: "Sports", text: "NFL season opener — Patriots @ Seahawks, primetime (NBC)." },
+      { col: 3, date: "9/10", cat: "Sports", text: "NFL Week 1 — 49ers vs. Rams, international game in Melbourne, Australia (Netflix)." },
+      { col: 5, date: "9/12", cat: "Sports", text: "Major college football Saturday (Week 2) + Noche UFC: Silva vs. Delgado (Paramount+)." },
+      { col: 6, date: "9/13", cat: "Sports", text: "NFL Week 1 full Sunday slate — 13 games, incl. Cowboys @ Giants primetime (NBC)." },
     ],
+    footnote: null,
     caveat: "The 2025 NFL season opened Sep 4 — about 5 days earlier than this year's Sep 9 opener — so last year's comparator week (ending 9/14/25) was already NFL Week 2, not opening weekend. The YoY growth rate above may understate this year's kickoff-weekend lift, particularly Sat 9/12 and Sun 9/13. No Domino's national promo calendar entries were confirmed as active this week as of the 9/30 marketing bulletin.",
   },
   wk2: {
     title: "Week at a Glance",
-    events: [
-      ["Mon 9/14", "Sports", "NFL Week 1 Monday Night Football — Broncos @ Chiefs (ESPN)."],
-      ["Thu 9/17", "Sports", "NFL Week 2 Thursday Night Football — Lions @ Bills (Prime Video)."],
-      ["Sat 9/19", "Sports", "Major college football Saturday (Week 3) + UFC 331: Van vs. Pantoja, Los Angeles."],
-      ["Sun 9/20", "Sports", "NFL Week 2 full Sunday slate."],
+    banners: [],
+    days: [
+      { col: 0, date: "9/14", cat: "Sports", text: "NFL Week 1 Monday Night Football — Broncos @ Chiefs (ESPN)." },
+      { col: 3, date: "9/17", cat: "Sports", text: "NFL Week 2 Thursday Night Football — Lions @ Bills (Prime Video)." },
+      { col: 5, date: "9/19", cat: "Sports", text: "Major college football Saturday (Week 3) + UFC 331: Van vs. Pantoja, Los Angeles." },
+      { col: 6, date: "9/20", cat: "Sports", text: "NFL Week 2 full Sunday slate." },
     ],
+    footnote: null,
     caveat: "Last year's comparator week (ending 9/21/25) was NFL Week 3; this year's week still carries Week 1's Monday nightcap plus Week 2, closer to season kickoff. Same caveat as Week 1 — treat Sat 9/19 and Sun 9/20 as having modest upside risk versus the model. No holidays (school in session both districts) or confirmed Domino's national promos this week.",
   },
   wk3: {
     title: "Week at a Glance",
-    events: [
-      ["Thu 9/24", "Sports", "NFL Week 3 Thursday Night Football — Falcons @ Packers (Prime Video)."],
-      ["Sat 9/26", "Sports", "Major college football Saturday — Texas @ Tennessee, Oklahoma @ Georgia, Ole Miss @ Florida, Texas A&M @ LSU (SEC-heavy slate)."],
-      ["Sun 9/27", "Sports", "NFL Week 3 full Sunday slate, including Rams @ Broncos in primetime (NBC)."],
-      ["Mon 9/28", "Sports", "NFL Week 3 Monday Night Football — Eagles @ Bears (ESPN), just after this forecast week ends."],
+    banners: [],
+    days: [
+      { col: 3, date: "9/24", cat: "Sports", text: "NFL Week 3 Thursday Night Football — Falcons @ Packers (Prime Video)." },
+      { col: 5, date: "9/26", cat: "Sports", text: "Major college football Saturday — Texas @ Tennessee, Oklahoma @ Georgia, Ole Miss @ Florida, Texas A&M @ LSU (SEC-heavy slate)." },
+      { col: 6, date: "9/27", cat: "Sports", text: "NFL Week 3 full Sunday slate, incl. Rams @ Broncos primetime (NBC)." },
     ],
+    footnote: { label: "Mon 9/28", cat: "Sports", text: "NFL Week 3 Monday Night Football — Eagles @ Bears (ESPN), just after this week ends." },
     caveat: "Last year's comparator week (ending 9/28/25) fell in an NFL Week 3/4 transition with a lighter non-conference college slate; this year's week pairs a full NFL Week 3 with an SEC-heavy college Saturday, typically a stronger sports-viewing week than the norm. Treat this as mild upside risk versus the model, concentrated Thu 9/24 and Sat 9/26–Sun 9/27. Separately: the YoY growth / seasonal-forecast signal now uses a 6-week comparison window (was 8) so it reacts faster to the above-trend YoY increase seen in the week of 9/7–13. No holidays or confirmed Domino's national promos this week.",
   },
   wk4: {
     title: "Week at a Glance",
-    events: [
-      ["Thu 10/1", "Sports", "NFL Week 4 Thursday Night Football — Steelers @ Browns (Prime Video)."],
-      ["Fri 10/2", "Sports", "College football — Penn State @ Northwestern (FOX), 8pm."],
-      ["Sat 10/3", "Sports", "Major college football Saturday — Alabama @ Mississippi State, Auburn @ Tennessee, Arkansas @ Texas A&M (SEC-heavy), plus Ohio State @ Iowa and Notre Dame @ North Carolina."],
-      ["Sat 10/3", "Ops", "Scheduled Michigan data center maintenance, 2-10am EDT — overnight window, minimal customer-facing impact expected."],
-      ["Sun 10/4", "Sports", "NFL Week 4 full Sunday slate (14 games), including a London game (Colts @ Commanders, 9:30am) and Lions @ Panthers in Sunday Night Football (NBC)."],
-      ["Thu 10/4", "Promo", "Domino's Reward Challenge ends today (loyalty/rewards promotion, live nationally through 10/4)."],
-      ["Mon 9/28–Sun 10/4", "Promo", "Domino's National Marketing Support Extended is live (through 11/15) — elevated national marketing spend in-market for the remainder of this window."],
+    banners: [
+      { cat: "Promo", text: "Domino's National Marketing Support Extended is live (through 11/15) — elevated national marketing spend in-market all week." },
     ],
+    days: [
+      { col: 3, date: "10/1", cat: "Sports", text: "NFL Week 4 Thursday Night Football — Steelers @ Browns (Prime Video)." },
+      { col: 4, date: "10/2", cat: "Sports", text: "College football — Penn State @ Northwestern (FOX), 8pm." },
+      { col: 5, date: "10/3", cat: "Sports", text: "Major college football Saturday — Alabama @ Miss. St, Auburn @ Tennessee, Arkansas @ Texas A&M (SEC-heavy), plus Ohio St @ Iowa and Notre Dame @ UNC." },
+      { col: 5, date: "10/3", cat: "Ops", text: "Scheduled Michigan data center maintenance, 2-10am EDT — overnight, minimal customer-facing impact expected." },
+      { col: 6, date: "10/4", cat: "Sports", text: "NFL Week 4 full Sunday slate (14 games), incl. London game (Colts @ Commanders, 9:30am) and Lions @ Panthers SNF (NBC)." },
+      { col: 6, date: "10/4", cat: "Promo", text: "Domino's Reward Challenge ends today (loyalty/rewards promo, live nationally through 10/4)." },
+    ],
+    footnote: null,
     caveat: "Last year's comparator week (ending 10/5/25) was also a full NFL Week 4/5-adjacent slate with a normal college schedule — unlike the season-kickoff weeks earlier in this forecast series, this comparison isn't expected to carry a material season-timing skew. NFL's Monday Night game (Falcons @ Saints, 10/5) falls just after this forecast week ends, same pattern as prior weeks. The YoY / seasonal-forecast signal keeps the shortened 6-week comparison window, now spanning both of the recent above-trend weeks (9/13 and 9/20 both beat forecast). Promo/ops items sourced from a corporate marketing bulletin received 9/30 — the model's blend doesn't explicitly account for the Reward Challenge or the extended marketing support, so any lift from those is upside risk versus the forecast, concentrated toward the end of this week.",
   },
   wk5: {
     title: "Week at a Glance",
-    events: [
-      ["Mon 10/5–Sun 10/11", "Promo", "50% Off Boost Week — sitewide 50% off menu-priced pizzas, live nationally all week (per corporate marketing bulletin received 9/30)."],
-      ["Mon 10/5–Sun 10/11", "Promo", "Domino's National Marketing Support Extended continues (live through 11/15) — elevated national marketing spend in-market all week."],
-      ["Thu 10/8", "Sports", "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)."],
-      ["Fri 10/9", "Sports", "MLB Division Series — potential decisive NLDS Game 5s."],
-      ["Sat 10/10", "Sports", "MLB Division Series — potential decisive ALDS Game 5s."],
-      ["Sun 10/11", "Sports", "NFL Week 5 full Sunday slate (13 games), including a London game (Eagles @ Jaguars, 9:30am) and Ravens @ Falcons in Sunday Night Football (NBC), plus MLB's NLCS Game 1."],
-      ["Mon 10/12", "School", "Just after this week ends: Student Holiday (no school) districtwide in both Okaloosa & Santa Rosa Co. — may lift the following week's daily pattern."],
+    banners: [
+      { cat: "Promo", text: "50% Off Boost Week — sitewide 50% off menu-priced pizzas, live nationally all 7 days (per corporate marketing bulletin received 9/30)." },
+      { cat: "Promo", text: "Domino's National Marketing Support Extended continues (live through 11/15) — elevated national marketing spend in-market all week." },
     ],
-    caveat: "IMPORTANT: this week carries a sitewide 50% Off Boost Week promo (all 7 days), confirmed via a corporate marketing bulletin received 9/30 — none of the three blended signals (trend, recency, seasonal/YoY) know about this discount, so the $162,004 forecast should be treated as a floor, not a ceiling. Public reporting shows Domino's has run similar 50%-off 'Boost Week' promotions at irregular intervals (not a fixed annual October slot), so there's no strong evidence last year's comparator week (ending 10/12/25) carried the same discount — meaning the YoY/seasonal signal likely doesn't have this promo baked in either, and the true upside could be larger than a simple YoY adjustment suggests. Separately: MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm. Last year's comparator week fell during the 2025 ALCS/NLCS window too, so that piece is roughly comparable year over year.",
+    days: [
+      { col: 3, date: "10/8", cat: "Sports", text: "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)." },
+      { col: 4, date: "10/9", cat: "Sports", text: "MLB Division Series — potential decisive NLDS Game 5s." },
+      { col: 5, date: "10/10", cat: "Sports", text: "MLB Division Series — potential decisive ALDS Game 5s." },
+      { col: 6, date: "10/11", cat: "Sports", text: "NFL Week 5 full Sunday slate (13 games), incl. London game (Eagles @ Jaguars, 9:30am), Ravens @ Falcons SNF (NBC), plus MLB NLCS Game 1." },
+    ],
+    footnote: { label: "Mon 10/12", cat: "School", text: "Student Holiday (no school) districtwide, both Okaloosa & Santa Rosa Co. — may lift the following week's daily pattern." },
+    caveat: "IMPORTANT: this week carries a sitewide 50% Off Boost Week promo (all 7 days), confirmed via a corporate marketing bulletin received 9/30 — none of the three blended signals (trend, recency, seasonal/YoY) know about this discount, so the $162,004 forecast should be treated as a floor, not a ceiling. Per the same bulletin's promo history, Domino's ran a similar 50%-off National Pizza Month promo the week of 9/30-10/6/2024, but no promo is listed for the comparable week in Oct 2025 (this forecast's YoY comparator) — so the YoY/seasonal signal almost certainly does NOT have this year's discount baked in, and the true upside could be larger than a simple YoY adjustment suggests. Separately: MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm. Last year's comparator week fell during the 2025 ALCS/NLCS window too, so that piece is roughly comparable year over year.",
   },
 };
 
@@ -728,13 +817,46 @@ function render(wkKey) {
     </div>
   `;
 
-  // week-at-a-glance calendar banner
+  // week-at-a-glance calendar
   const evData = CALENDAR_EVENTS[wkKey];
+  const dowNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dateForCol = {};
+  WEEKDAY_KEYS[wkKey].forEach((k, i) => {
+    const parts = k.split(" ")[1].split("-"); // "09-07" -> ["09","07"]
+    dateForCol[i] = `${parseInt(parts[0], 10)}/${parseInt(parts[1], 10)}`;
+  });
+  const dayCols = dowNames.map((dow, i) => ({
+    dow,
+    date: dateForCol[i],
+    events: evData.days.filter((d) => d.col === i),
+  }));
+  const banners = evData.banners
+    .map((b) => `<div class="cal-banner cat-${b.cat.toLowerCase()}"><span class="cat-tag">${b.cat}</span><span class="desc">${b.text}</span></div>`)
+    .join("");
+  const grid = dayCols
+    .map(
+      (d) => `
+    <div class="cal-day">
+      <div class="cal-day-head"><span>${d.dow}</span><span class="cal-date">${d.date}</span></div>
+      ${d.events.map((e) => `<div class="cal-chip"><span class="cat-dot cat-${e.cat.toLowerCase()}-dot"></span><span class="desc" title="${e.text.replace(/"/g, "&quot;")}">${e.text}</span></div>`).join("")}
+    </div>`
+    )
+    .join("");
+  const footnote = evData.footnote
+    ? `<div class="cal-footnote"><span class="cat-tag">${evData.footnote.label}</span><span class="desc">${evData.footnote.text}</span></div>`
+    : "";
   document.getElementById("events-banner").innerHTML = `
     <div class="events-title">${evData.title}</div>
-    <div class="events-list">
-      ${evData.events.map(([day, cat, desc]) => `<div class="ev"><span class="cat cat-${cat.toLowerCase()}">${cat}</span><span class="day">${day}</span><span class="desc">${desc}</span></div>`).join("")}
+    <div class="cal-legend">
+      <span><span class="cat-dot cat-holiday-dot"></span>Holiday</span>
+      <span><span class="cat-dot cat-promo-dot"></span>Promo</span>
+      <span><span class="cat-dot cat-sports-dot"></span>Sports</span>
+      <span><span class="cat-dot cat-school-dot"></span>School</span>
+      <span><span class="cat-dot cat-ops-dot"></span>Ops</span>
     </div>
+    <div class="cal-banners">${banners}</div>
+    <div class="cal-grid">${grid}</div>
+    ${footnote}
     <div class="events-caveat">${evData.caveat}</div>
   `;
 
