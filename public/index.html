@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azure Sales Forecast</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F6F4EF;
+    --surface: #FFFFFF;
+    --surface-2: #EFEBE1;
+    --ink: #201D17;
+    --muted: #756F5D;
+    --border: #E2DCC9;
+    --accent: #2F6F62;
+    --accent-soft: #DEEAE5;
+    --down: #B5502C;
+    --down-soft: #F4E3DA;
+    --warn: #B0812A;
+    --warn-soft: #F4EAD2;
+    --shadow: 0 1px 2px rgba(32,29,23,0.04), 0 8px 24px -12px rgba(32,29,23,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="azure"]) {
+      --bg: #14130E;
+      --surface: #1D1B15;
+      --surface-2: #26231A;
+      --ink: #ECE7DA;
+      --muted: #A79B85;
+      --border: #342E20;
+      --accent: #63A891;
+      --accent-soft: #223731;
+      --down: #DB8360;
+      --down-soft: #3A2117;
+      --warn: #D9AB55;
+      --warn-soft: #3A2E11;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14130E;
+    --surface: #1D1B15;
+    --surface-2: #26231A;
+    --ink: #ECE7DA;
+    --muted: #A79B85;
+    --border: #342E20;
+    --accent: #63A891;
+    --accent-soft: #223731;
+    --down: #DB8360;
+    --down-soft: #3A2117;
+    --warn: #D9AB55;
+    --warn-soft: #3A2E11;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"] {
+    --bg: #F6F4EF;
+    --surface: #FFFFFF;
+    --surface-2: #EFEBE1;
+    --ink: #201D17;
+    --muted: #756F5D;
+    --border: #E2DCC9;
+    --accent: #2F6F62;
+    --accent-soft: #DEEAE5;
+    --down: #B5502C;
+    --down-soft: #F4E3DA;
+    --warn: #B0812A;
+    --warn-soft: #F4EAD2;
+    --shadow: 0 1px 2px rgba(32,29,23,0.04), 0 8px 24px -12px rgba(32,29,23,0.12);
+  }
+  :root[data-theme="azure"] {
+    --bg: #EAF2FB;
+    --surface: #FFFFFF;
+    --surface-2: #DAE8F7;
+    --ink: #12273F;
+    --muted: #52708F;
+    --border: #C4DBF0;
+    --accent: #1D6FD8;
+    --accent-soft: #DCE9FB;
+    --down: #C2472C;
+    --down-soft: #F8E2DA;
+    --warn: #A9761E;
+    --warn-soft: #F4E7CB;
+    --shadow: 0 1px 2px rgba(18,39,63,0.05), 0 8px 24px -12px rgba(18,39,63,0.16);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  header.page {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .sub { color: var(--muted); font-size: 14.5px; margin-top: 8px; max-width: 46ch; }
+
+  .weektabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+    max-width: 100%;
+  }
+  .weektabs button {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .weektabs button.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .weektabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .theme-switch {
+    display: inline-flex;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .theme-switch button {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .theme-switch button.active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .theme-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .summary .tile {
+    background: var(--surface);
+    padding: 18px 20px;
+  }
+  .tile .label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .tile .value { font-size: 24px; font-weight: 500; }
+  .tile .value.accent { color: var(--accent); }
+  .tile .range { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  .events-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warn);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow);
+  }
+  .events-banner .events-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--warn);
+    margin-bottom: 10px;
+  }
+  .events-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 8px 20px;
+    margin-bottom: 12px;
+  }
+  .events-list .ev {
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+  }
+  .events-list .ev .day {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .events-list .ev .desc { color: var(--muted); }
+  .events-caveat {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px 18px;
+    box-shadow: var(--shadow);
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .store-id { font-family: "Newsreader", serif; font-size: 22px; font-weight: 500; }
+  .store-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+  .badge {
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.up { background: var(--accent-soft); color: var(--accent); }
+  .badge.down { background: var(--down-soft); color: var(--down); }
+  .badge.flat { background: var(--surface-2); color: var(--muted); }
+
+  .forecast-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .forecast-num { font-size: 28px; font-weight: 600; }
+  .yoy { font-size: 13px; }
+  .yoy.up { color: var(--accent); }
+  .yoy.down { color: var(--down); }
+
+  .range-line { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .vol-flag { display: inline-flex; align-items: center; gap: 5px; color: var(--warn); font-size: 12px; font-weight: 500; margin-bottom: 14px; }
+  .vol-flag::before { content: "●"; font-size: 8px; }
+
+  .chart { display: block; width: 100%; height: 96px; }
+  .chart .bar { fill: var(--accent); }
+  .chart .bar.peak { fill: var(--ink); }
+  .chart .axis-label { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; fill: var(--muted); }
+  .chart .val-label { font-family: "IBM Plex Mono", monospace; font-size: 9px; fill: var(--muted); }
+
+  details.more { margin-top: 12px; }
+  details.more summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  details.more summary::before { content: "▸"; font-size: 9px; transition: transform 0.15s ease; }
+  details.more[open] summary::before { transform: rotate(90deg); }
+  details.more summary::-webkit-details-marker { display: none; }
+  .method-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    font-size: 12.5px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .method-grid .k { color: var(--muted); }
+  .method-grid .v { text-align: right; }
+
+  section.table-section { margin-bottom: 40px; }
+  section.table-section h2 {
+    font-family: "Newsreader", serif;
+    font-weight: 500;
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+  section.table-section .sub { margin-bottom: 16px; }
+
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13px; }
+  thead th {
+    text-align: right;
+    font-weight: 500;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child { text-align: left; }
+  tbody td {
+    padding: 11px 14px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td:first-child { text-align: left; font-weight: 500; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.total td { font-weight: 600; background: var(--surface-2); }
+
+  td.daycell { padding-top: 8px; padding-bottom: 8px; vertical-align: top; }
+  td.daycell .fc-val { color: var(--muted); font-size: 11.5px; }
+  td.daycell .actual-val { font-weight: 600; margin-top: 1px; }
+  td.daycell .variance { font-size: 11px; margin-top: 1px; }
+  td.daycell .variance.up { color: var(--accent); }
+  td.daycell .variance.down { color: var(--down); }
+  td.daycell.flagged { background: var(--warn-soft); position: relative; }
+  td.daycell.flagged .actual-val::after {
+    content: "⚑";
+    color: var(--warn);
+    margin-left: 5px;
+    font-size: 10px;
+  }
+  .daily-legend { font-size: 11.5px; color: var(--muted); margin: 10px 14px 0; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .daily-legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--warn-soft); border: 1px solid var(--warn); margin-right: 5px; vertical-align: -1px; }
+
+  footer.notes {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  footer.notes strong { color: var(--ink); font-weight: 500; }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 27px; }
+    .wrap { padding: 28px 16px 60px; }
+    .weektabs button { padding: 8px 11px; font-size: 12.5px; }
+    .theme-switch button { padding: 6px 9px; font-size: 11.5px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <div>
+      <p class="eyebrow">Azure Stores &middot; Royalty Sales</p>
+      <h1>Azure Sales Forecast</h1>
+      <p class="sub">Blend of trend regression, recent momentum, and same-period-last-year seasonality, split Mon&ndash;Sun by each store's own day-of-week pattern.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+      <div class="theme-switch" role="tablist" aria-label="Color theme">
+        <button type="button" data-theme="light" role="tab" aria-selected="false">Light</button>
+        <button type="button" data-theme="azure" role="tab" aria-selected="false">Azure</button>
+        <button type="button" data-theme="dark" role="tab" aria-selected="false">Dark</button>
+      </div>
+      <div class="weektabs" role="tablist" aria-label="Forecast week">
+        <button type="button" class="active" data-week="wk1" role="tab" aria-selected="true">Week of Sep 7</button>
+        <button type="button" data-week="wk2" role="tab" aria-selected="false">Week of Sep 14</button>
+        <button type="button" data-week="wk3" role="tab" aria-selected="false">Week of Sep 21</button>
+        <button type="button" data-week="wk4" role="tab" aria-selected="false">Week of Sep 28</button>
+        <button type="button" data-week="wk5" role="tab" aria-selected="false">Week of Oct 5</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="events-banner" id="events-banner"></div>
+
+  <div class="grid" id="cards"></div>
+
+  <section class="table-section">
+    <h2>Daily forecast</h2>
+    <p class="sub">Each store's weekly forecast split Monday&ndash;Sunday. Rows sum to the Total column.</p>
+    <div class="table-scroll">
+      <table id="daily-table">
+        <thead id="daily-head"></thead>
+        <tbody id="daily-body"></tbody>
+      </table>
+    </div>
+    <div class="daily-legend" id="daily-legend"></div>
+  </section>
+
+  <section class="table-section" id="labor-section">
+    <h2>Labor plan</h2>
+    <p class="sub">Ideal Labor $ and Hours Needed, projected from each store's own fitted relationship to sales. Sales/Labor Hour is Forecasted Sales &divide; Hours Needed.</p>
+    <div class="table-scroll">
+      <table id="labor-table">
+        <thead id="labor-head"></thead>
+        <tbody id="labor-body"></tbody>
+      </table>
+    </div>
+    <div class="daily-legend" id="labor-legend"></div>
+  </section>
+
+  <section class="table-section">
+    <h2>Full breakdown</h2>
+    <p class="sub">Every signal behind each store's forecast, for the selected week.</p>
+    <div class="table-scroll">
+      <table id="detail-table">
+        <thead>
+          <tr>
+            <th>Store</th>
+            <th>Last actual</th>
+            <th>8-wk avg</th>
+            <th>Linear trend</th>
+            <th>Weighted recent</th>
+            <th>LY same wk</th>
+            <th>YoY</th>
+            <th>Seasonal fc.</th>
+            <th>Forecast</th>
+            <th>Low&ndash;High</th>
+          </tr>
+        </thead>
+        <tbody id="detail-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="notes">
+    <strong>Method.</strong> Each week's forecast averages three signals: a least-squares trend line across the trailing 8 weeks, a recency-weighted average of the last 4 weeks (weights 1&ndash;2&ndash;3&ndash;4), and a seasonal projection &mdash; last year's matching fiscal week scaled by this year's aggregate year-over-year growth over the same 8-week window. The daily split uses each store's own average day-of-week share of weekly sales from the most recent 8 weeks (rolled forward to 8/3&ndash;9/27 as of 2026-09-29, previously frozen at 7/13&ndash;9/6), so Mon&ndash;Sun always sums exactly to the weekly forecast. The low&ndash;high range is the forecast &plusmn;1.28&times; the store's 8-week volatility (&asymp;80% historical range) &mdash; a guide, not a guarantee. Source: Keys &ndash; Trend Costs Trend reports, weeks ending 2026-07-19 through 2026-09-06, plus the matching fiscal weeks from 2025.
+    <br><br>
+    <strong>Labor plan method.</strong> Ideal Labor $ and Hours Needed are each fit per store as a straight line against sales &mdash; Ideal Labor $ from one week of actual Ideal Labor % &times; Sales (week of 9/7&ndash;13), Hours Needed from one week of the company's own Forecast Sales vs. Hours Needed (All groups, week of 9/14&ndash;20, KEYS Labor Schedule report) &mdash; then applied to each week's forecasted sales. R&sup2; per store ranges 0.84&ndash;0.97 for Ideal Labor $ and 0.98&ndash;0.99 for Hours Needed (see workbook, "Labor Model Inputs" tab). Both fits rest on a single week of source data and should be re-fit as more weeks accumulate. Managers are salaried in the source labor-cost data, so Hours Needed is a total-labor-hours planning figure, not a direct wage-cost conversion.
+  </footer>
+</div>
+
+<script>
+// Theme switcher: light / azure / dark, persisted per-viewer where storage is available.
+(function () {
+  const THEMES = ["light", "azure", "dark"];
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    document.querySelectorAll(".theme-switch button").forEach((b) => {
+      const active = b.dataset.theme === t;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    try { localStorage.setItem("azure_forecast_theme", t); } catch (e) {}
+  }
+  let initial = "light";
+  try {
+    const saved = localStorage.getItem("azure_forecast_theme");
+    if (saved && THEMES.includes(saved)) initial = saved;
+  } catch (e) {}
+  applyTheme(initial);
+  document.querySelectorAll(".theme-switch button").forEach((btn) => {
+    btn.addEventListener("click", () => applyTheme(btn.dataset.theme));
+  });
+})();
+
+const DATA = {"wk1": [{"Store": "3116", "Last Actual (Wk 9/6)": 39297.26, "8-Wk Average": 39884.7613, "Linear Trend Forecast": 33507.5032, "Weighted Recent Avg (last 4 wks)": 36604.701, "LY Same Week (P10-1, 9/14/25)": 36075.78, "YoY Growth (8-wk window)": 0.0265, "Seasonal Forecast (LY x YoY)": 37032.8245, "Forecast \u2014 Next Week (Blend of 3)": 35715.0096, "Mon 09-07": 3418.6597, "Tue 09-08": 3229.0258, "Wed 09-09": 3970.557, "Thu 09-10": 4071.1516, "Fri 09-11": 8105.8789, "Sat 09-12": 7405.1187, "Sun 09-13": 5514.618, "Weekly Volatility (StDev)": 4722.0982, "Low Estimate (~80% range)": 29670.7239, "High Estimate (~80% range)": 41759.2953, "Trend Note": "Trending down."}, {"Store": "3802", "Last Actual (Wk 9/6)": 29216.23, "8-Wk Average": 29199.0863, "Linear Trend Forecast": 24931.6479, "Weighted Recent Avg (last 4 wks)": 27291.794, "LY Same Week (P10-1, 9/14/25)": 24962.36, "YoY Growth (8-wk window)": 0.0675, "Seasonal Forecast (LY x YoY)": 26648.3096, "Forecast \u2014 Next Week (Blend of 3)": 26290.5838, "Mon 09-07": 2845.1221, "Tue 09-08": 2523.4007, "Wed 09-09": 2975.8978, "Thu 09-10": 3212.4203, "Fri 09-11": 5341.5445, "Sat 09-12": 5057.0972, "Sun 09-13": 4335.1013, "Weekly Volatility (StDev)": 3137.5887, "Low Estimate (~80% range)": 22274.4702, "High Estimate (~80% range)": 30306.6974, "Trend Note": "Trending down."}, {"Store": "3882", "Last Actual (Wk 9/6)": 34889.8, "8-Wk Average": 35406.145, "Linear Trend Forecast": 18757.2829, "Weighted Recent Avg (last 4 wks)": 27220.982, "LY Same Week (P10-1, 9/14/25)": 19031.38, "YoY Growth (8-wk window)": 0.078, "Seasonal Forecast (LY x YoY)": 20516.0028, "Forecast \u2014 Next Week (Blend of 3)": 22164.7559, "Mon 09-07": 2124.0546, "Tue 09-08": 2078.8115, "Wed 09-09": 2371.7234, "Thu 09-10": 3243.957, "Fri 09-11": 4334.0543, "Sat 09-12": 4729.7833, "Sun 09-13": 3282.3717, "Weekly Volatility (StDev)": 11385.8678, "Low Estimate (~80% range)": 7590.8451, "High Estimate (~80% range)": 36738.6667, "Trend Note": "High volatility \u2014 wide range; treat as directional. Trending down."}, {"Store": "5161", "Last Actual (Wk 9/6)": 27733.66, "8-Wk Average": 27774.5375, "Linear Trend Forecast": 29136.8043, "Weighted Recent Avg (last 4 wks)": 28336.473, "LY Same Week (P10-1, 9/14/25)": 26435.77, "YoY Growth (8-wk window)": -0.0493, "Seasonal Forecast (LY x YoY)": 25132.8864, "Forecast \u2014 Next Week (Blend of 3)": 27535.3879, "Mon 09-07": 2592.5109, "Tue 09-08": 2763.5873, "Wed 09-09": 2792.5654, "Thu 09-10": 3422.3503, "Fri 09-11": 5850.3314, "Sat 09-12": 5409.9273, "Sun 09-13": 4704.1152, "Weekly Volatility (StDev)": 1554.8057, "Low Estimate (~80% range)": 25545.2366, "High Estimate (~80% range)": 29525.5392, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "5166", "Last Actual (Wk 9/6)": 31951.03, "8-Wk Average": 32221.3662, "Linear Trend Forecast": 27261.2771, "Weighted Recent Avg (last 4 wks)": 29778.167, "LY Same Week (P10-1, 9/14/25)": 26392.55, "YoY Growth (8-wk window)": 0.1089, "Seasonal Forecast (LY x YoY)": 29266.9675, "Forecast \u2014 Next Week (Blend of 3)": 28768.8039, "Mon 09-07": 2972.3854, "Tue 09-08": 2983.0689, "Wed 09-09": 3462.9352, "Thu 09-10": 3631.5104, "Fri 09-11": 5466.7621, "Sat 09-12": 5767.3549, "Sun 09-13": 4484.787, "Weekly Volatility (StDev)": 3509.5719, "Low Estimate (~80% range)": 24276.5519, "High Estimate (~80% range)": 33261.0559, "Trend Note": "Trending down."}, {"Store": "8604", "Last Actual (Wk 9/6)": 14949.75, "8-Wk Average": 15905.6112, "Linear Trend Forecast": 13277.7221, "Weighted Recent Avg (last 4 wks)": 14685.172, "LY Same Week (P10-1, 9/14/25)": 14955.53, "YoY Growth (8-wk window)": -0.0131, "Seasonal Forecast (LY x YoY)": 14759.5329, "Forecast \u2014 Next Week (Blend of 3)": 14240.809, "Mon 09-07": 1282.5596, "Tue 09-08": 1372.2049, "Wed 09-09": 1407.0765, "Thu 09-10": 1726.1701, "Fri 09-11": 3437.2917, "Sat 09-12": 2952.0312, "Sun 09-13": 2063.475, "Weekly Volatility (StDev)": 1711.9967, "Low Estimate (~80% range)": 12049.4533, "High Estimate (~80% range)": 16432.1648, "Trend Note": "Trending down."}], "wk2": [{"Store": "3116", "Last Actual (Wk 9/6)": 39297.26, "8-Wk Average": 39884.7613, "Linear Trend Forecast": 32090.3348, "Weighted Recent Avg (last 4 wks)": 36604.701, "LY Same Week (P10-2, 9/21/25)": 35009.71, "YoY Growth (8-wk window)": 0.0265, "Seasonal Forecast (LY x YoY)": 35938.473, "Forecast \u2014 Week After Next (Blend of 3)": 34877.8363, "Mon 09-14": 3338.525, "Tue 09-15": 3153.3362, "Wed 09-16": 3877.4856, "Thu 09-17": 3975.7223, "Fri 09-18": 7915.874, "Sat 09-19": 7231.54, "Sun 09-20": 5385.3533, "Weekly Volatility (StDev)": 4722.0982, "Low Estimate (~80% range)": 28833.5506, "High Estimate (~80% range)": 40922.1219, "Trend Note": "Trending down."}, {"Store": "3802", "Last Actual (Wk 9/6)": 29216.23, "8-Wk Average": 29199.0863, "Linear Trend Forecast": 23983.3282, "Weighted Recent Avg (last 4 wks)": 27291.794, "LY Same Week (P10-2, 9/21/25)": 24797.94, "YoY Growth (8-wk window)": 0.0675, "Seasonal Forecast (LY x YoY)": 26472.7848, "Forecast \u2014 Week After Next (Blend of 3)": 25915.969, "Mon 09-14": 2804.5819, "Tue 09-15": 2487.4448, "Wed 09-16": 2933.4942, "Thu 09-17": 3166.6464, "Fri 09-18": 5265.4328, "Sat 09-19": 4985.0385, "Sun 09-20": 4273.3304, "Weekly Volatility (StDev)": 3137.5887, "Low Estimate (~80% range)": 21899.8554, "High Estimate (~80% range)": 29932.0826, "Trend Note": "Trending down."}, {"Store": "3882", "Last Actual (Wk 9/6)": 34889.8, "8-Wk Average": 35406.145, "Linear Trend Forecast": 15057.5357, "Weighted Recent Avg (last 4 wks)": 27220.982, "LY Same Week (P10-2, 9/21/25)": 16377.35, "YoY Growth (8-wk window)": 0.078, "Seasonal Forecast (LY x YoY)": 17654.934, "Forecast \u2014 Week After Next (Blend of 3)": 19977.8172, "Mon 09-14": 1914.4797, "Tue 09-15": 1873.7006, "Wed 09-16": 2137.7116, "Thu 09-17": 2923.8842, "Fri 09-18": 3906.4245, "Sat 09-19": 4263.1079, "Sun 09-20": 2958.5086, "Weekly Volatility (StDev)": 11385.8678, "Low Estimate (~80% range)": 5403.9065, "High Estimate (~80% range)": 34551.728, "Trend Note": "High volatility \u2014 wide range; treat as directional. Trending down."}, {"Store": "5161", "Last Actual (Wk 9/6)": 27733.66, "8-Wk Average": 27774.5375, "Linear Trend Forecast": 29439.5302, "Weighted Recent Avg (last 4 wks)": 28336.473, "LY Same Week (P10-2, 9/21/25)": 26547.24, "YoY Growth (8-wk window)": -0.0493, "Seasonal Forecast (LY x YoY)": 25238.8626, "Forecast \u2014 Week After Next (Blend of 3)": 27671.6219, "Mon 09-14": 2605.3376, "Tue 09-15": 2777.2605, "Wed 09-16": 2806.3819, "Thu 09-17": 3439.2827, "Fri 09-18": 5879.2765, "Sat 09-19": 5436.6934, "Sun 09-20": 4727.3892, "Weekly Volatility (StDev)": 1554.8057, "Low Estimate (~80% range)": 25681.4707, "High Estimate (~80% range)": 29661.7732, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "5166", "Last Actual (Wk 9/6)": 31951.03, "8-Wk Average": 32221.3662, "Linear Trend Forecast": 26159.0351, "Weighted Recent Avg (last 4 wks)": 29778.167, "LY Same Week (P10-2, 9/21/25)": 25969.64, "YoY Growth (8-wk window)": 0.1089, "Seasonal Forecast (LY x YoY)": 28797.9983, "Forecast \u2014 Week After Next (Blend of 3)": 28245.0668, "Mon 09-14": 2918.273, "Tue 09-15": 2928.762, "Wed 09-16": 3399.8924, "Thu 09-17": 3565.3987, "Fri 09-18": 5367.2395, "Sat 09-19": 5662.36, "Sun 09-20": 4403.1412, "Weekly Volatility (StDev)": 3509.5719, "Low Estimate (~80% range)": 23752.8148, "High Estimate (~80% range)": 32737.3189, "Trend Note": "Trending down."}, {"Store": "8604", "Last Actual (Wk 9/6)": 14949.75, "8-Wk Average": 15905.6112, "Linear Trend Forecast": 12693.7468, "Weighted Recent Avg (last 4 wks)": 14685.172, "LY Same Week (P10-2, 9/21/25)": 14791.64, "YoY Growth (8-wk window)": -0.0131, "Seasonal Forecast (LY x YoY)": 14597.7908, "Forecast \u2014 Week After Next (Blend of 3)": 13992.2365, "Mon 09-14": 1260.1726, "Tue 09-15": 1348.2532, "Wed 09-16": 1382.516, "Thu 09-17": 1696.0399, "Fri 09-18": 3377.294, "Sat 09-19": 2900.5037, "Sun 09-20": 2027.4572, "Weekly Volatility (StDev)": 1711.9967, "Low Estimate (~80% range)": 11800.8808, "High Estimate (~80% range)": 16183.5923, "Trend Note": "Trending down."}], "wk3": [{"Store": "3116", "Last Actual (Wk 9/13)": 38146.62, "8-Wk Average": 39240.2175, "Linear Trend Forecast": 32663.4445, "Weighted Recent Avg (last 4 wks)": 37408.755, "LY Same Week (P10-3, 9/28/25)": 35986.52, "YoY Growth (6-wk window)": 0.02, "Seasonal Forecast (LY x YoY)": 36706.6252, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 35592.9416, "Mon 09-21": 3406.9752, "Tue 09-22": 3217.9895, "Wed 09-23": 3956.9863, "Thu 09-24": 4057.2371, "Fri 09-25": 8078.1743, "Sat 09-26": 7379.8093, "Sun 09-27": 5495.7699, "Weekly Volatility (StDev)": 4537.1635, "Low Estimate (~80% range)": 29785.3723, "High Estimate (~80% range)": 41400.5109, "Trend Note": "Trending down."}, {"Store": "3802", "Last Actual (Wk 9/13)": 29554.26, "8-Wk Average": 28789.6512, "Linear Trend Forecast": 25876.1736, "Weighted Recent Avg (last 4 wks)": 28309.923, "LY Same Week (P10-3, 9/28/25)": 24935.06, "YoY Growth (6-wk window)": 0.0754, "Seasonal Forecast (LY x YoY)": 26814.0456, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 27000.0474, "Mon 09-21": 2921.899, "Tue 09-22": 2591.4959, "Wed 09-23": 3056.2038, "Thu 09-24": 3299.1089, "Fri 09-25": 5485.6886, "Sat 09-26": 5193.5653, "Sun 09-27": 4452.086, "Weekly Volatility (StDev)": 2790.6642, "Low Estimate (~80% range)": 23427.9972, "High Estimate (~80% range)": 30572.0976, "Trend Note": "Trending down."}, {"Store": "3882", "Last Actual (Wk 9/13)": 22111.79, "8-Wk Average": 32047.835, "Linear Trend Forecast": 13603.839, "Weighted Recent Avg (last 4 wks)": 25625.443, "LY Same Week (P10-3, 9/28/25)": 20649.68, "YoY Growth (6-wk window)": 0.1484, "Seasonal Forecast (LY x YoY)": 23713.1976, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 20980.8265, "Mon 09-21": 2010.5984, "Tue 09-22": 1967.7719, "Wed 09-23": 2245.0379, "Thu 09-24": 3070.6812, "Fri 09-25": 4102.5511, "Sat 09-26": 4477.1422, "Sun 09-27": 3107.0439, "Weekly Volatility (StDev)": 10755.5781, "Low Estimate (~80% range)": 7213.6865, "High Estimate (~80% range)": 34747.9666, "Trend Note": "High volatility \u2014 wide range; treat as directional. Trending down."}, {"Store": "5161", "Last Actual (Wk 9/13)": 29247.34, "8-Wk Average": 28210.475, "Linear Trend Forecast": 29363.2698, "Weighted Recent Avg (last 4 wks)": 28563.005, "LY Same Week (P10-3, 9/28/25)": 28127.1, "YoY Growth (6-wk window)": 0.0046, "Seasonal Forecast (LY x YoY)": 28255.381, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 28727.2186, "Mon 09-21": 2704.7241, "Tue 09-22": 2883.2054, "Wed 09-23": 2913.4377, "Thu 09-24": 3570.482, "Fri 09-25": 6103.5548, "Sat 09-26": 5644.0884, "Sun 09-27": 4907.7262, "Weekly Volatility (StDev)": 1389.3346, "Low Estimate (~80% range)": 26948.8703, "High Estimate (~80% range)": 30505.5669, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "5166", "Last Actual (Wk 9/13)": 31816.23, "8-Wk Average": 31688.5175, "Linear Trend Forecast": 27713.7592, "Weighted Recent Avg (last 4 wks)": 30648.564, "LY Same Week (P10-3, 9/28/25)": 28362.46, "YoY Growth (6-wk window)": 0.0937, "Seasonal Forecast (LY x YoY)": 31019.4189, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 29793.914, "Mon 09-21": 3078.2995, "Tue 09-22": 3089.3637, "Wed 09-23": 3586.329, "Thu 09-24": 3760.911, "Fri 09-25": 5661.5576, "Sat 09-26": 5972.8613, "Sun 09-27": 4644.592, "Weekly Volatility (StDev)": 3144.8571, "Low Estimate (~80% range)": 25768.4969, "High Estimate (~80% range)": 33819.3312, "Trend Note": "Trending down."}, {"Store": "8604", "Last Actual (Wk 9/13)": 15576.01, "8-Wk Average": 15566.1787, "Linear Trend Forecast": 13609.1995, "Weighted Recent Avg (last 4 wks)": 15083.595, "LY Same Week (P10-3, 9/28/25)": 14307.92, "YoY Growth (6-wk window)": -0.0394, "Seasonal Forecast (LY x YoY)": 13743.5413, "Forecast \u2014 Week of Sept 21 (Blend of 3)": 14145.4453, "Mon 09-21": 1273.9709, "Tue 09-22": 1363.0159, "Wed 09-23": 1397.654, "Thu 09-24": 1714.6108, "Fri 09-25": 3414.2738, "Sat 09-26": 2932.2629, "Sun 09-27": 2049.6569, "Weekly Volatility (StDev)": 1414.7755, "Low Estimate (~80% range)": 12334.5326, "High Estimate (~80% range)": 15956.3579, "Trend Note": "Trending down."}], "wk4": [{"Store": "3116", "Last Actual (Wk 9/20)": 37044.85, "8-Wk Average": 38305.7787, "Linear Trend Forecast": 33834.3082, "Weighted Recent Avg (last 4 wks)": 37567.003, "LY Same Week (P10-4, 10/5/25)": 35273.73, "YoY Growth (6-wk window)": 0.0095, "Seasonal Forecast (LY x YoY)": 35610.0033, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 35670.4382, "Mon 09-28": 3414.3933, "Tue 09-29": 3224.996, "Wed 09-30": 3965.6018, "Thu 10-01": 4066.0709, "Fri 10-02": 8095.7629, "Sat 10-03": 7395.8773, "Sun 10-04": 5507.7359, "Weekly Volatility (StDev)": 4036.5349, "Low Estimate (~80% range)": 30503.6735, "High Estimate (~80% range)": 40837.2028, "Trend Note": "Trending down."}, {"Store": "3802", "Last Actual (Wk 9/20)": 26203.44, "8-Wk Average": 28047.1, "Linear Trend Forecast": 25924.8569, "Weighted Recent Avg (last 4 wks)": 27781.982, "LY Same Week (P10-4, 10/5/25)": 25929.02, "YoY Growth (6-wk window)": 0.0768, "Seasonal Forecast (LY x YoY)": 27920.9491, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 27209.2627, "Mon 09-28": 2944.5399, "Tue 09-29": 2611.5766, "Wed 09-30": 3079.8854, "Thu 10-01": 3324.6727, "Fri 10-02": 5528.1956, "Sat 10-03": 5233.8086, "Sun 10-04": 4486.5839, "Weekly Volatility (StDev)": 2550.6702, "Low Estimate (~80% range)": 23944.4049, "High Estimate (~80% range)": 30474.1205, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "3882", "Last Actual (Wk 9/20)": 23250.78, "8-Wk Average": 29218.9875, "Linear Trend Forecast": 14895.0245, "Weighted Recent Avg (last 4 wks)": 24955.439, "LY Same Week (P10-4, 10/5/25)": 23360.15, "YoY Growth (6-wk window)": 0.1607, "Seasonal Forecast (LY x YoY)": 27113.4073, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 22321.2903, "Mon 09-28": 2139.0554, "Tue 09-29": 2093.4928, "Wed 09-30": 2388.4732, "Thu 10-01": 3266.8668, "Fri 10-02": 4364.6628, "Sat 10-03": 4763.1865, "Sun 10-04": 3305.5528, "Weekly Volatility (StDev)": 9500.1837, "Low Estimate (~80% range)": 10161.0551, "High Estimate (~80% range)": 34481.5254, "Trend Note": "High volatility \u2014 wide range; treat as directional. Trending down."}, {"Store": "5161", "Last Actual (Wk 9/20)": 28673.6, "8-Wk Average": 28480.4287, "Linear Trend Forecast": 28845.763, "Weighted Recent Avg (last 4 wks)": 28598.855, "LY Same Week (P10-4, 10/5/25)": 25517.8, "YoY Growth (6-wk window)": 0.0368, "Seasonal Forecast (LY x YoY)": 26455.6903, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 27966.7694, "Mon 09-28": 2633.1264, "Tue 09-29": 2806.8829, "Wed 09-30": 2836.315, "Thu 10-01": 3475.9664, "Fri 10-02": 5941.9853, "Sat 10-03": 5494.6816, "Sun 10-04": 4777.8119, "Weekly Volatility (StDev)": 1210.9683, "Low Estimate (~80% range)": 26416.73, "High Estimate (~80% range)": 29516.8088, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "5166", "Last Actual (Wk 9/20)": 28709.04, "8-Wk Average": 30895.2212, "Linear Trend Forecast": 27538.9307, "Weighted Recent Avg (last 4 wks)": 30200.583, "LY Same Week (P10-4, 10/5/25)": 26806.48, "YoY Growth (6-wk window)": 0.0874, "Seasonal Forecast (LY x YoY)": 29149.5872, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 28963.0337, "Mon 09-28": 2992.4531, "Tue 09-29": 3003.2088, "Wed 09-30": 3486.3149, "Thu 10-01": 3656.0282, "Fri 10-02": 5503.6704, "Sat 10-03": 5806.2926, "Sun 10-04": 4515.0656, "Weekly Volatility (StDev)": 2969.7921, "Low Estimate (~80% range)": 25161.6998, "High Estimate (~80% range)": 32764.3675, "Trend Note": "Trending down."}, {"Store": "8604", "Last Actual (Wk 9/20)": 15429.27, "8-Wk Average": 15294.3612, "Linear Trend Forecast": 14475.3792, "Weighted Recent Avg (last 4 wks)": 15250.131, "LY Same Week (P10-4, 10/5/25)": 15262.74, "YoY Growth (6-wk window)": -0.0201, "Seasonal Forecast (LY x YoY)": 14955.5164, "Forecast \u2014 Week of Sept 28 (Blend of 3)": 14893.6755, "Mon 09-28": 1341.3583, "Tue 09-29": 1435.1133, "Wed 09-30": 1471.5836, "Thu 10-01": 1805.3059, "Fri 10-02": 3594.8735, "Sat 10-03": 3087.3664, "Sun 10-04": 2158.0745, "Weekly Volatility (StDev)": 1151.8217, "Low Estimate (~80% range)": 13419.3437, "High Estimate (~80% range)": 16368.0073, "Trend Note": "Roughly flat vs. 8-wk avg."}], "wk5": [{"Store": "3116", "Last Actual (Wk 9/27)": 37327.26, "8-Wk Average": 37086.76, "Linear Trend Forecast": 37336.9773, "Weighted Recent Avg (last 4 wks)": 37603.409, "LY Same Week (P11-1, 10/12/25)": 37169.76, "YoY Growth (8-wk window)": 0.0268, "Seasonal Forecast (LY x YoY)": 38165.0503, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 37701.8122, "Mon 10-05": 3608.8375, "Tue 10-06": 3408.6544, "Wed 10-07": 4191.4365, "Thu 10-08": 4297.6271, "Fri 10-09": 8556.8036, "Sat 10-10": 7817.0606, "Sun 10-11": 5821.3926, "Weekly Volatility (StDev)": 1932.7308, "Low Estimate (~80% range)": 35227.9168, "High Estimate (~80% range)": 40175.7076, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "3802", "Last Actual (Wk 9/27)": 26306.06, "8-Wk Average": 27188.595, "Linear Trend Forecast": 27289.6431, "Weighted Recent Avg (last 4 wks)": 27215.931, "LY Same Week (P11-1, 10/12/25)": 26668.66, "YoY Growth (8-wk window)": 0.0706, "Seasonal Forecast (LY x YoY)": 28550.807, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 27685.4604, "Mon 10-05": 2996.0732, "Tue 10-06": 2657.2826, "Wed 10-07": 3133.7874, "Thu 10-08": 3382.8588, "Fri 10-09": 5624.9462, "Sat 10-10": 5325.4071, "Sun 10-11": 4565.1049, "Weekly Volatility (StDev)": 1530.1855, "Low Estimate (~80% range)": 25726.823, "High Estimate (~80% range)": 29644.0977, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "3882", "Last Actual (Wk 9/27)": 21106.76, "8-Wk Average": 25947.7463, "Linear Trend Forecast": 18546.8251, "Weighted Recent Avg (last 4 wks)": 23329.276, "LY Same Week (P11-1, 10/12/25)": 26369.86, "YoY Growth (8-wk window)": 0.1586, "Seasonal Forecast (LY x YoY)": 30552.4232, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 24142.8414, "Mon 10-05": 2313.6151, "Tue 10-06": 2264.3343, "Wed 10-07": 2583.387, "Thu 10-08": 3533.4627, "Fri 10-09": 4720.8455, "Sat 10-10": 5151.8911, "Sun 10-11": 3575.3057, "Weekly Volatility (StDev)": 6390.7734, "Low Estimate (~80% range)": 15962.6515, "High Estimate (~80% range)": 32323.0314, "Trend Note": "High volatility \u2014 wide range; treat as directional. Trending down."}, {"Store": "5161", "Last Actual (Wk 9/27)": 29663.32, "8-Wk Average": 28532.765, "Linear Trend Forecast": 29890.5906, "Weighted Recent Avg (last 4 wks)": 29090.242, "LY Same Week (P11-1, 10/12/25)": 24942.47, "YoY Growth (8-wk window)": 0.0198, "Seasonal Forecast (LY x YoY)": 25436.5821, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 28139.1382, "Mon 10-05": 2649.3552, "Tue 10-06": 2824.1827, "Wed 10-07": 2853.7962, "Thu 10-08": 3497.3899, "Fri 10-09": 5978.6078, "Sat 10-10": 5528.5472, "Sun 10-11": 4807.2592, "Weekly Volatility (StDev)": 1256.891, "Low Estimate (~80% range)": 26530.3178, "High Estimate (~80% range)": 29747.9587, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "5166", "Last Actual (Wk 9/27)": 30406.7, "8-Wk Average": 30090.7475, "Linear Trend Forecast": 30015.1919, "Weighted Recent Avg (last 4 wks)": 30333.741, "LY Same Week (P11-1, 10/12/25)": 26630.05, "YoY Growth (8-wk window)": 0.0923, "Seasonal Forecast (LY x YoY)": 29087.7293, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 29812.2207, "Mon 10-05": 3080.1909, "Tue 10-06": 3091.262, "Wed 10-07": 3588.5326, "Thu 10-08": 3763.2218, "Fri 10-09": 5665.0363, "Sat 10-10": 5976.5313, "Sun 10-11": 4647.4459, "Weekly Volatility (StDev)": 1749.6481, "Low Estimate (~80% range)": 27572.6712, "High Estimate (~80% range)": 32051.7702, "Trend Note": "Roughly flat vs. 8-wk avg."}, {"Store": "8604", "Last Actual (Wk 9/27)": 13709.91, "8-Wk Average": 14798.8237, "Linear Trend Forecast": 14656.0457, "Weighted Recent Avg (last 4 wks)": 14722.922, "LY Same Week (P11-1, 10/12/25)": 14624.32, "YoY Growth (8-wk window)": -0.0297, "Seasonal Forecast (LY x YoY)": 14189.7844, "Forecast \u2014 Week of Oct 5 (Blend of 3)": 14522.9174, "Mon 10-05": 1307.9669, "Tue 10-06": 1399.3881, "Wed 10-07": 1434.9505, "Thu 10-08": 1760.3652, "Fri 10-09": 3505.384, "Sat 10-10": 3010.5105, "Sun 10-11": 2104.3522, "Weekly Volatility (StDev)": 771.7512, "Low Estimate (~80% range)": 13535.0759, "High Estimate (~80% range)": 15510.7589, "Trend Note": "Roughly flat vs. 8-wk avg."}]};
+
+const WEEKDAY_KEYS = {
+  wk1: ["Mon 09-07","Tue 09-08","Wed 09-09","Thu 09-10","Fri 09-11","Sat 09-12","Sun 09-13"],
+  wk2: ["Mon 09-14","Tue 09-15","Wed 09-16","Thu 09-17","Fri 09-18","Sat 09-19","Sun 09-20"],
+  wk3: ["Mon 09-21","Tue 09-22","Wed 09-23","Thu 09-24","Fri 09-25","Sat 09-26","Sun 09-27"],
+  wk4: ["Mon 09-28","Tue 09-29","Wed 09-30","Thu 10-01","Fri 10-02","Sat 10-03","Sun 10-04"],
+  wk5: ["Mon 10-05","Tue 10-06","Wed 10-07","Thu 10-08","Fri 10-09","Sat 10-10","Sun 10-11"],
+};
+const WEEKDAY_SHORT = ["M","T","W","T","F","S","S"];
+const FORECAST_KEY = {
+  wk1: "Forecast — Next Week (Blend of 3)",
+  wk2: "Forecast — Week After Next (Blend of 3)",
+  wk3: "Forecast — Week of Sept 21 (Blend of 3)",
+  wk4: "Forecast — Week of Sept 28 (Blend of 3)",
+  wk5: "Forecast — Week of Oct 5 (Blend of 3)",
+};
+const LY_KEY = {
+  wk1: "LY Same Week (P10-1, 9/14/25)",
+  wk2: "LY Same Week (P10-2, 9/21/25)",
+  wk3: "LY Same Week (P10-3, 9/28/25)",
+  wk4: "LY Same Week (P10-4, 10/5/25)",
+  wk5: "LY Same Week (P11-1, 10/12/25)",
+};
+const LAST_ACTUAL_KEY = {
+  wk1: "Last Actual (Wk 9/6)",
+  wk2: "Last Actual (Wk 9/6)",
+  wk3: "Last Actual (Wk 9/13)",
+  wk4: "Last Actual (Wk 9/20)",
+  wk5: "Last Actual (Wk 9/27)",
+};
+const LAST_ACTUAL_LABEL = { wk1: "Wk 9/6", wk2: "Wk 9/6", wk3: "Wk 9/13 (actual)", wk4: "Wk 9/20 (actual)", wk5: "Wk 9/27 (actual)" };
+const YOY_GROWTH_KEY = {
+  wk1: "YoY Growth (8-wk window)",
+  wk2: "YoY Growth (8-wk window)",
+  wk3: "YoY Growth (6-wk window)",
+  wk4: "YoY Growth (6-wk window)",
+  wk5: "YoY Growth (8-wk window)",
+};
+const WEEK_LABEL = { wk1: "Sep 7–13, 2026", wk2: "Sep 14–20, 2026", wk3: "Sep 21–27, 2026", wk4: "Sep 28–Oct 4, 2026", wk5: "Oct 5–11, 2026" };
+
+// Labor plan: weekly per-store totals from the "Labor Plan" tab (Ideal Labor $ and Hours Needed
+// regressions fit to real store data — see workbook for method notes). wk2 also carries the
+// company's own actual scheduled/needed hours (KEYS Labor Schedule report) for comparison.
+const LABOR_DATA = {"wk1":[{"store":"3116","sales":35715.01,"ideal_pct":0.1999,"ideal_dollar":7138.6,"hours":437.3,"splh":81.68},{"store":"3802","sales":26290.58,"ideal_pct":0.227,"ideal_dollar":5968.1,"hours":402.1,"splh":65.39},{"store":"3882","sales":22164.76,"ideal_pct":0.2646,"ideal_dollar":5864.37,"hours":334.7,"splh":66.22},{"store":"5161","sales":27535.39,"ideal_pct":0.2576,"ideal_dollar":7093.96,"hours":441.3,"splh":62.4},{"store":"5166","sales":28768.8,"ideal_pct":0.2119,"ideal_dollar":6096.09,"hours":417.1,"splh":68.98},{"store":"8604","sales":14240.81,"ideal_pct":0.3115,"ideal_dollar":4435.53,"hours":303.4,"splh":46.93}],"wk2":[{"store":"3116","sales":34877.84,"ideal_pct":0.2015,"ideal_dollar":7026.85,"hours":431.3,"splh":80.87,"co_hn":439.25,"co_hs":566.25},{"store":"3802","sales":25915.97,"ideal_pct":0.2287,"ideal_dollar":5926.96,"hours":398.7,"splh":64.99,"co_hn":399.25,"co_hs":431.5},{"store":"3882","sales":19977.82,"ideal_pct":0.279,"ideal_dollar":5574.37,"hours":321.1,"splh":62.21,"co_hn":322.5,"co_hs":394.75},{"store":"5161","sales":27671.62,"ideal_pct":0.2569,"ideal_dollar":7108.88,"hours":442.5,"splh":62.54,"co_hn":442.75,"co_hs":480.0},{"store":"5166","sales":28245.07,"ideal_pct":0.2135,"ideal_dollar":6030.59,"hours":412.5,"splh":68.47,"co_hn":412.75,"co_hs":435.5},{"store":"8604","sales":13992.24,"ideal_pct":0.3149,"ideal_dollar":4406.8,"hours":300.6,"splh":46.55,"co_hn":304.75,"co_hs":289.25}],"wk3":[{"store":"3116","sales":35592.94,"ideal_pct":0.2001,"ideal_dollar":7122.3,"hours":436.4,"splh":81.56},{"store":"3802","sales":27000.05,"ideal_pct":0.2239,"ideal_dollar":6046.01,"hours":408.4,"splh":66.11},{"store":"3882","sales":20980.83,"ideal_pct":0.272,"ideal_dollar":5707.38,"hours":327.4,"splh":64.09},{"store":"5161","sales":28727.22,"ideal_pct":0.2515,"ideal_dollar":7224.49,"hours":451.7,"splh":63.6},{"store":"5166","sales":29793.91,"ideal_pct":0.2089,"ideal_dollar":6224.28,"hours":426.0,"splh":69.94},{"store":"8604","sales":14145.45,"ideal_pct":0.3128,"ideal_dollar":4424.51,"hours":302.4,"splh":46.78}],"wk4":[{"store":"3116","sales":35670.44,"ideal_pct":0.2,"ideal_dollar":7132.65,"hours":437.0,"splh":81.63},{"store":"3802","sales":27209.26,"ideal_pct":0.223,"ideal_dollar":6068.98,"hours":410.3,"splh":66.32},{"store":"3882","sales":22321.29,"ideal_pct":0.2637,"ideal_dollar":5885.13,"hours":335.7,"splh":66.49},{"store":"5161","sales":27966.77,"ideal_pct":0.2553,"ideal_dollar":7141.21,"hours":445.1,"splh":62.84},{"store":"5166","sales":28963.03,"ideal_pct":0.2113,"ideal_dollar":6120.38,"hours":418.8,"splh":69.16},{"store":"8604","sales":14893.68,"ideal_pct":0.3029,"ideal_dollar":4510.99,"hours":310.8,"splh":47.91}],"wk5":[{"store":"3116","sales":37701.81,"ideal_pct":0.1964,"ideal_dollar":7403.8,"hours":451.5,"splh":83.51},{"store":"3802","sales":27685.46,"ideal_pct":0.2211,"ideal_dollar":6121.28,"hours":414.5,"splh":66.79},{"store":"3882","sales":24142.84,"ideal_pct":0.2538,"ideal_dollar":6126.67,"hours":347.0,"splh":69.57},{"store":"5161","sales":28139.14,"ideal_pct":0.2545,"ideal_dollar":7160.09,"hours":446.6,"splh":63.01},{"store":"5166","sales":29812.22,"ideal_pct":0.2089,"ideal_dollar":6226.57,"hours":426.1,"splh":69.96},{"store":"8604","sales":14522.92,"ideal_pct":0.3077,"ideal_dollar":4468.14,"hours":306.6,"splh":47.36}]};
+
+// Actual sales as they're reported (Royalty Sales (Tot), KEYS Food & Labor Trends reports). Keyed by the same
+// day strings as WEEKDAY_KEYS. Blank/missing = not yet reported.
+const ACTUALS = {
+  wk1: {
+    "3116": { "Mon 09-07": 5084.44, "Tue 09-08": 3534.04, "Wed 09-09": 3723.13, "Thu 09-10": 3765.62, "Fri 09-11": 8744.05, "Sat 09-12": 6797.09, "Sun 09-13": 6498.25 },
+    "3802": { "Mon 09-07": 4287.16, "Tue 09-08": 2514.98, "Wed 09-09": 3019.54, "Thu 09-10": 3827.20, "Fri 09-11": 6085.86, "Sat 09-12": 5770.00, "Sun 09-13": 4049.52 },
+    "3882": { "Mon 09-07": 3156.52, "Tue 09-08": 1924.60, "Wed 09-09": 2077.01, "Thu 09-10": 3032.05, "Fri 09-11": 4030.68, "Sat 09-12": 4997.42, "Sun 09-13": 2893.51 },
+    "5161": { "Mon 09-07": 4779.35, "Tue 09-08": 2471.66, "Wed 09-09": 2104.56, "Thu 09-10": 2608.81, "Fri 09-11": 6161.04, "Sat 09-12": 6210.55, "Sun 09-13": 4911.37 },
+    "5166": { "Mon 09-07": 3800.91, "Tue 09-08": 3438.40, "Wed 09-09": 3503.35, "Thu 09-10": 3994.10, "Fri 09-11": 6415.21, "Sat 09-12": 6272.94, "Sun 09-13": 4391.32 },
+    "8604": { "Mon 09-07": 1812.74, "Tue 09-08": 1510.86, "Wed 09-09": 1514.18, "Thu 09-10": 1703.13, "Fri 09-11": 2920.28, "Sat 09-12": 3850.91, "Sun 09-13": 2263.91 },
+  },
+  wk2: {
+    "3116": { "Mon 09-14": 3451.90, "Tue 09-15": 3412.22, "Wed 09-16": 3839.45, "Thu 09-17": 3953.44, "Fri 09-18": 8843.23, "Sat 09-19": 8187.92, "Sun 09-20": 5356.69 },
+    "3802": { "Mon 09-14": 2465.06, "Tue 09-15": 2541.83, "Wed 09-16": 2658.86, "Thu 09-17": 3368.22, "Fri 09-18": 4944.60, "Sat 09-19": 5442.08, "Sun 09-20": 4782.79 },
+    "3882": { "Mon 09-14": 2380.59, "Tue 09-15": 1770.39, "Wed 09-16": 2061.21, "Thu 09-17": 3975.36, "Fri 09-18": 4890.95, "Sat 09-19": 4731.61, "Sun 09-20": 3440.67 },
+    "5161": { "Mon 09-14": 1902.90, "Tue 09-15": 2934.56, "Wed 09-16": 2991.57, "Thu 09-17": 4400.18, "Fri 09-18": 6092.30, "Sat 09-19": 5147.84, "Sun 09-20": 5204.25 },
+    "5166": { "Mon 09-14": 3137.68, "Tue 09-15": 2836.89, "Wed 09-16": 2852.18, "Thu 09-17": 3836.65, "Fri 09-18": 5352.55, "Sat 09-19": 5952.13, "Sun 09-20": 4740.96 },
+    "8604": { "Mon 09-14": 1092.08, "Tue 09-15": 1579.55, "Wed 09-16": 1513.09, "Thu 09-17": 1928.07, "Fri 09-18": 3665.18, "Sat 09-19": 3075.43, "Sun 09-20": 2575.87 },
+  },
+  wk3: {
+    "3116": { "Mon 09-21": 2814.09, "Tue 09-22": 3255.05, "Wed 09-23": 4036.94, "Thu 09-24": 4508.81, "Fri 09-25": 8384.67, "Sat 09-26": 7755.19, "Sun 09-27": 6572.51 },
+    "3802": { "Mon 09-21": 3127.37, "Tue 09-22": 2517.74, "Wed 09-23": 3330.13, "Thu 09-24": 2976.10, "Fri 09-25": 5088.53, "Sat 09-26": 4498.77, "Sun 09-27": 4767.42 },
+    "3882": { "Mon 09-21": 1683.71, "Tue 09-22": 1825.53, "Wed 09-23": 2662.76, "Thu 09-24": 2973.90, "Fri 09-25": 4297.68, "Sat 09-26": 4938.64, "Sun 09-27": 2724.54 },
+    "5161": { "Mon 09-21": 2406.61, "Tue 09-22": 3175.17, "Wed 09-23": 3531.91, "Thu 09-24": 3818.77, "Fri 09-25": 5940.61, "Sat 09-26": 6195.26, "Sun 09-27": 4594.99 },
+    "5166": { "Mon 09-21": 3479.26, "Tue 09-22": 2739.43, "Wed 09-23": 3232.05, "Thu 09-24": 3842.01, "Fri 09-25": 5428.66, "Sat 09-26": 6595.75, "Sun 09-27": 5089.54 },
+    "8604": { "Mon 09-21": 1260.15, "Tue 09-22": 1425.50, "Wed 09-23": 1761.37, "Thu 09-24": 1252.73, "Fri 09-25": 3222.40, "Sat 09-26": 2713.93, "Sun 09-27": 2073.83 },
+  },
+  wk4: {},
+  wk5: {},
+};
+// Days with a known anomaly, excluded from the "clean" accuracy read
+const FLAGGED_DAYS = {
+  wk1: { "Mon 09-07": "Labor Day (US holiday)" },
+  wk2: {},
+  wk3: {},
+  wk4: {},
+  wk5: {},
+};
+
+const SPORTS_EVENTS = {
+  wk1: {
+    title: "Major sporting events this week",
+    events: [
+      ["Wed 9/9", "NFL season opener — Patriots @ Seahawks, primetime (NBC)."],
+      ["Thu 9/10", "NFL Week 1 — 49ers vs. Rams, international game in Melbourne, Australia (Netflix)."],
+      ["Sat 9/12", "Major college football Saturday (Week 2) + Noche UFC: Silva vs. Delgado (Paramount+)."],
+      ["Sun 9/13", "NFL Week 1 full Sunday slate — 13 games, including Cowboys @ Giants in primetime (NBC)."],
+    ],
+    caveat: "The 2025 NFL season opened Sep 4 — about 5 days earlier than this year's Sep 9 opener — so last year's comparator week (ending 9/14/25) was already NFL Week 2, not opening weekend. The YoY growth rate above may understate this year's kickoff-weekend lift, particularly Sat 9/12 and Sun 9/13.",
+  },
+  wk2: {
+    title: "Major sporting events this week",
+    events: [
+      ["Mon 9/14", "NFL Week 1 Monday Night Football — Broncos @ Chiefs (ESPN)."],
+      ["Thu 9/17", "NFL Week 2 Thursday Night Football — Lions @ Bills (Prime Video)."],
+      ["Sat 9/19", "Major college football Saturday (Week 3) + UFC 331: Van vs. Pantoja, Los Angeles."],
+      ["Sun 9/20", "NFL Week 2 full Sunday slate."],
+    ],
+    caveat: "Last year's comparator week (ending 9/21/25) was NFL Week 3; this year's week still carries Week 1's Monday nightcap plus Week 2, closer to season kickoff. Same caveat as Week 1 — treat Sat 9/19 and Sun 9/20 as having modest upside risk versus the model.",
+  },
+  wk3: {
+    title: "Major sporting events this week",
+    events: [
+      ["Thu 9/24", "NFL Week 3 Thursday Night Football — Falcons @ Packers (Prime Video)."],
+      ["Sat 9/26", "Major college football Saturday — Texas @ Tennessee, Oklahoma @ Georgia, Ole Miss @ Florida, Texas A&M @ LSU (SEC-heavy slate)."],
+      ["Sun 9/27", "NFL Week 3 full Sunday slate, including Rams @ Broncos in primetime (NBC)."],
+      ["Mon 9/28", "NFL Week 3 Monday Night Football — Eagles @ Bears (ESPN), just after this forecast week ends."],
+    ],
+    caveat: "Last year's comparator week (ending 9/28/25) fell in an NFL Week 3/4 transition with a lighter non-conference college slate; this year's week pairs a full NFL Week 3 with an SEC-heavy college Saturday, typically a stronger sports-viewing week than the norm. Treat this as mild upside risk versus the model, concentrated Thu 9/24 and Sat 9/26–Sun 9/27. Separately: the YoY growth / seasonal-forecast signal now uses a 6-week comparison window (was 8) so it reacts faster to the above-trend YoY increase seen in the week of 9/7–13.",
+  },
+  wk4: {
+    title: "Major sporting events this week",
+    events: [
+      ["Thu 10/1", "NFL Week 4 Thursday Night Football — Steelers @ Browns (Prime Video)."],
+      ["Fri 10/2", "College football — Penn State @ Northwestern (FOX), 8pm."],
+      ["Sat 10/3", "Major college football Saturday — Alabama @ Mississippi State, Auburn @ Tennessee, Arkansas @ Texas A&M (SEC-heavy), plus Ohio State @ Iowa and Notre Dame @ North Carolina."],
+      ["Sun 10/4", "NFL Week 4 full Sunday slate (14 games), including a London game (Colts @ Commanders, 9:30am) and Lions @ Panthers in Sunday Night Football (NBC)."],
+    ],
+    caveat: "Last year's comparator week (ending 10/5/25) was also a full NFL Week 4/5-adjacent slate with a normal college schedule — unlike the season-kickoff weeks earlier in this forecast series, this comparison isn't expected to carry a material season-timing skew. NFL's Monday Night game (Falcons @ Saints, 10/5) falls just after this forecast week ends, same pattern as prior weeks. The YoY / seasonal-forecast signal keeps the shortened 6-week comparison window, now spanning both of the recent above-trend weeks (9/13 and 9/20 both beat forecast).",
+  },
+  wk5: {
+    title: "Major sporting events this week",
+    events: [
+      ["Thu 10/8", "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)."],
+      ["Fri 10/9", "MLB Division Series — potential decisive NLDS Game 5s."],
+      ["Sat 10/10", "MLB Division Series — potential decisive ALDS Game 5s."],
+      ["Sun 10/11", "NFL Week 5 full Sunday slate (13 games), including a London game (Eagles @ Jaguars, 9:30am) and Ravens @ Falcons in Sunday Night Football (NBC), plus MLB's NLCS Game 1."],
+    ],
+    caveat: "MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm, similar in kind to the Week of Sept 28 forecast. Last year's comparator week (ending 10/12/25) fell during the 2025 ALCS/NLCS window too, so the postseason overlap is roughly comparable year over year. Separately: the YoY / seasonal-forecast signal reverts to the standard 8-week comparison window this week (was the shortened 6-week window for the last two forecasts) — actual YoY growth has been decelerating for three straight weeks (+12.6%, +11.0%, +4.0%), the opposite of the acceleration that window was built to track.",
+  },
+};
+
+const fmt$ = (n) => "$" + Math.round(n).toLocaleString("en-US");
+const fmtPct = (n) => (n >= 0 ? "+" : "") + (n * 100).toFixed(1) + "%";
+const fmtPctPlain = (n) => (n * 100).toFixed(1) + "%";
+
+function trendClass(note) {
+  if (note.indexOf("Trending up") !== -1) return "up";
+  if (note.indexOf("Trending down") !== -1) return "down";
+  return "flat";
+}
+function trendLabel(note) {
+  if (note.indexOf("Trending up") !== -1) return "Trending up";
+  if (note.indexOf("Trending down") !== -1) return "Trending down";
+  return "Roughly flat";
+}
+
+function buildChart(row, wkKey) {
+  const keys = WEEKDAY_KEYS[wkKey];
+  const vals = keys.map((k) => row[k]);
+  const max = Math.max(...vals);
+  const w = 280, h = 96, padTop = 16, padBottom = 20, barGap = 6;
+  const barW = (w - barGap * (vals.length - 1)) / vals.length;
+  const peakIdx = vals.indexOf(max);
+  let bars = "";
+  vals.forEach((v, i) => {
+    const barH = (v / max) * (h - padTop - padBottom);
+    const x = i * (barW + barGap);
+    const y = h - padBottom - barH;
+    bars += `<rect class="bar${i === peakIdx ? " peak" : ""}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3"/>`;
+    bars += `<text class="val-label" x="${(x + barW / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle">${Math.round(v / 1000)}k</text>`;
+    bars += `<text class="axis-label" x="${(x + barW / 2).toFixed(1)}" y="${h - 5}" text-anchor="middle">${WEEKDAY_SHORT[i]}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Daily forecast, Monday through Sunday">${bars}</svg>`;
+}
+
+function render(wkKey) {
+  const rows = DATA[wkKey];
+  const fcKey = FORECAST_KEY[wkKey];
+  const lyKey = LY_KEY[wkKey];
+  const laKey = LAST_ACTUAL_KEY[wkKey];
+  const laLabel = LAST_ACTUAL_LABEL[wkKey];
+  const yoyGrowthKey = YOY_GROWTH_KEY[wkKey];
+
+  // summary tiles
+  const totalFc = rows.reduce((s, r) => s + r[fcKey], 0);
+  const totalLow = rows.reduce((s, r) => s + r["Low Estimate (~80% range)"], 0);
+  const totalHigh = rows.reduce((s, r) => s + r["High Estimate (~80% range)"], 0);
+  const totalLY = rows.reduce((s, r) => s + r[lyKey], 0);
+  const yoy = totalFc / totalLY - 1;
+  const upCount = rows.filter((r) => trendClass(r["Trend Note"]) === "up").length;
+  const downCount = rows.filter((r) => trendClass(r["Trend Note"]) === "down").length;
+  const flatCount = rows.length - upCount - downCount;
+
+  document.getElementById("summary").innerHTML = `
+    <div class="tile">
+      <div class="label">Week</div>
+      <div class="value">${WEEK_LABEL[wkKey]}</div>
+    </div>
+    <div class="tile">
+      <div class="label">Total forecast, all stores</div>
+      <div class="value num accent">${fmt$(totalFc)}</div>
+      <div class="range num">${fmt$(totalLow)}&ndash;${fmt$(totalHigh)}</div>
+    </div>
+    <div class="tile">
+      <div class="label">Vs. same week last year</div>
+      <div class="value num" style="color:${yoy >= 0 ? "var(--accent)" : "var(--down)"}">${fmtPct(yoy)}</div>
+    </div>
+    <div class="tile">
+      <div class="label">Store direction</div>
+      <div class="value" style="font-size:18px;white-space:nowrap">${upCount} up &middot; ${downCount} down &middot; ${flatCount} flat</div>
+    </div>
+  `;
+
+  // sporting events banner
+  const evData = SPORTS_EVENTS[wkKey];
+  document.getElementById("events-banner").innerHTML = `
+    <div class="events-title">${evData.title}</div>
+    <div class="events-list">
+      ${evData.events.map(([day, desc]) => `<div class="ev"><span class="day">${day}</span><span class="desc">${desc}</span></div>`).join("")}
+    </div>
+    <div class="events-caveat">${evData.caveat}</div>
+  `;
+
+  // cards
+  document.getElementById("cards").innerHTML = rows.map((r) => {
+    const tClass = trendClass(r["Trend Note"]);
+    const tLabel = trendLabel(r["Trend Note"]);
+    const isVolatile = r["Trend Note"].indexOf("High volatility") !== -1;
+    const yoyVal = r[yoyGrowthKey];
+    return `
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <div class="store-id num">${r["Store"]}</div>
+          <div class="store-tag">Store</div>
+        </div>
+        <span class="badge ${tClass}">${tLabel}</span>
+      </div>
+      <div class="forecast-row">
+        <span class="forecast-num num">${fmt$(r[fcKey])}</span>
+        <span class="yoy num ${yoyVal >= 0 ? "up" : "down"}">${fmtPct(yoyVal)} YoY</span>
+      </div>
+      <div class="range-line num">Range ${fmt$(r["Low Estimate (~80% range)"])}&ndash;${fmt$(r["High Estimate (~80% range)"])}</div>
+      ${isVolatile ? `<div class="vol-flag">High volatility &mdash; treat as directional</div>` : ""}
+      ${buildChart(r, wkKey)}
+      <details class="more">
+        <summary>Show signal breakdown</summary>
+        <div class="method-grid num">
+          <div class="k">Last actual (${laLabel})</div><div class="v">${fmt$(r[laKey])}</div>
+          <div class="k">8-week average</div><div class="v">${fmt$(r["8-Wk Average"])}</div>
+          <div class="k">Linear trend</div><div class="v">${fmt$(r["Linear Trend Forecast"])}</div>
+          <div class="k">Weighted recent (last 4 wks)</div><div class="v">${fmt$(r["Weighted Recent Avg (last 4 wks)"])}</div>
+          <div class="k">LY same week</div><div class="v">${fmt$(r[lyKey])}</div>
+          <div class="k">Seasonal forecast</div><div class="v">${fmt$(r["Seasonal Forecast (LY x YoY)"])}</div>
+        </div>
+      </details>
+    </article>`;
+  }).join("");
+
+  // daily forecast table
+  const dayKeys = WEEKDAY_KEYS[wkKey];
+  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayDates = dayKeys.map((k) => k.split(" ")[1]);
+  document.getElementById("daily-head").innerHTML = `
+    <tr>
+      <th>Store</th>
+      ${dayLabels.map((d, i) => `<th>${d}<br><span style="font-weight:400;text-transform:none;font-size:10px">${dayDates[i]}</span></th>`).join("")}
+      <th>Total</th>
+    </tr>`;
+  const actualsWk = ACTUALS[wkKey] || {};
+  const flaggedWk = FLAGGED_DAYS[wkKey] || {};
+  const reportedDays = dayKeys.filter((k) => dayKeys.some(() => true) && rows.some((r) => actualsWk[r["Store"]] && actualsWk[r["Store"]][k] !== undefined));
+
+  const dailyRowsHtml = rows.map((r) => {
+    const storeActuals = actualsWk[r["Store"]] || {};
+    const cells = dayKeys.map((k) => {
+      const fcVal = r[k];
+      const actualVal = storeActuals[k];
+      const flagNote = flaggedWk[k];
+      if (actualVal === undefined) {
+        return `<td class="num${flagNote ? " daycell flagged" : ""}">${fmt$(fcVal)}</td>`;
+      }
+      const variance = actualVal / fcVal - 1;
+      const vClass = variance >= 0 ? "up" : "down";
+      return `<td class="num daycell${flagNote ? " flagged" : ""}" ${flagNote ? `title="${flagNote}"` : ""}>
+        <div class="fc-val">fc ${fmt$(fcVal)}</div>
+        <div class="actual-val">${fmt$(actualVal)}</div>
+        <div class="variance ${vClass}">${fmtPct(variance)}</div>
+      </td>`;
+    }).join("");
+    const reportedKeys = dayKeys.filter((k) => storeActuals[k] !== undefined);
+    let totalCell;
+    if (reportedKeys.length === 0) {
+      totalCell = `<td class="num" style="font-weight:600">${fmt$(r[fcKey])}</td>`;
+    } else {
+      const actualToDate = reportedKeys.reduce((s, k) => s + storeActuals[k], 0);
+      const fcToDate = reportedKeys.reduce((s, k) => s + r[k], 0);
+      const totalVariance = actualToDate / fcToDate - 1;
+      const totalVClass = totalVariance >= 0 ? "up" : "down";
+      totalCell = `<td class="num daycell" style="font-weight:600">
+        <div class="fc-val">fc ${fmt$(r[fcKey])}</div>
+        <div class="actual-val">${fmt$(actualToDate)}${reportedKeys.length < dayKeys.length ? " to date" : ""}</div>
+        <div class="variance ${totalVClass}">${fmtPct(totalVariance)}</div>
+      </td>`;
+    }
+    return `<tr><td>${r["Store"]}</td>${cells}${totalCell}</tr>`;
+  }).join("");
+  const dailyTotals = dayKeys.map((k) => rows.reduce((s, r) => s + r[k], 0));
+  const dailyTotalCells = dayKeys.map((k, i) => {
+    const anyActual = rows.some((r) => (actualsWk[r["Store"]] || {})[k] !== undefined);
+    if (!anyActual) return `<td class="num">${fmt$(dailyTotals[i])}</td>`;
+    const actualSum = rows.reduce((s, r) => s + ((actualsWk[r["Store"]] || {})[k] ?? 0), 0);
+    const variance = actualSum / dailyTotals[i] - 1;
+    const vClass = variance >= 0 ? "up" : "down";
+    return `<td class="num daycell">
+      <div class="fc-val">fc ${fmt$(dailyTotals[i])}</div>
+      <div class="actual-val">${fmt$(actualSum)}</div>
+      <div class="variance ${vClass}">${fmtPct(variance)}</div>
+    </td>`;
+  });
+  const grandReportedKeys = dayKeys.filter((k) => rows.some((r) => (actualsWk[r["Store"]] || {})[k] !== undefined));
+  let grandTotalCell;
+  if (grandReportedKeys.length === 0) {
+    grandTotalCell = `<td class="num">${fmt$(totalFc)}</td>`;
+  } else {
+    const grandActualToDate = grandReportedKeys.reduce((s, k) => s + rows.reduce((ss, r) => ss + ((actualsWk[r["Store"]] || {})[k] ?? 0), 0), 0);
+    const grandFcToDate = grandReportedKeys.reduce((s, k) => s + rows.reduce((ss, r) => ss + r[k], 0), 0);
+    const grandVariance = grandActualToDate / grandFcToDate - 1;
+    const grandVClass = grandVariance >= 0 ? "up" : "down";
+    grandTotalCell = `<td class="num daycell">
+      <div class="fc-val">fc ${fmt$(totalFc)}</div>
+      <div class="actual-val">${fmt$(grandActualToDate)}${grandReportedKeys.length < dayKeys.length ? " to date" : ""}</div>
+      <div class="variance ${grandVClass}">${fmtPct(grandVariance)}</div>
+    </td>`;
+  }
+  const dailyTotalHtml = `
+    <tr class="total">
+      <td>Total</td>
+      ${dailyTotalCells.join("")}
+      ${grandTotalCell}
+    </tr>`;
+  document.getElementById("daily-body").innerHTML = dailyRowsHtml + dailyTotalHtml;
+
+  const legendBits = [];
+  if (reportedDays.length) {
+    legendBits.push(`<span>Bold value = actual sales reported (Royalty Sales, Tot); "fc" = original forecast; % = variance vs. forecast.</span>`);
+  }
+  if (Object.keys(flaggedWk).length) {
+    const flagList = Object.entries(flaggedWk).map(([d, note]) => `${d.split(" ")[0]} &mdash; ${note}`).join("; ");
+    legendBits.push(`<span><span class="swatch"></span>${flagList}, not reflected in the day-of-week model.</span>`);
+  }
+  document.getElementById("daily-legend").innerHTML = legendBits.join("");
+
+  // labor plan table (not yet modeled for every forecast week — hide the section when there's no data)
+  const laborRows = LABOR_DATA[wkKey];
+  document.getElementById("labor-section").hidden = !laborRows;
+  if (laborRows) {
+  const hasCo = laborRows.some((r) => r.co_hn !== undefined);
+  document.getElementById("labor-head").innerHTML = `
+    <tr>
+      <th>Store</th>
+      <th>Forecasted sales</th>
+      <th>Ideal labor %</th>
+      <th>Ideal labor $</th>
+      <th>Hours needed</th>
+      <th>Sales / labor hr</th>
+      ${hasCo ? `<th>Co. hours needed (actual)</th><th>Diff</th>` : ""}
+    </tr>`;
+  const laborRowsHtml = laborRows.map((r) => {
+    let coCells = "";
+    if (hasCo) {
+      const diff = r.hours / r.co_hn - 1;
+      const diffClass = Math.abs(diff) < 0.02 ? "" : (diff >= 0 ? "up" : "down");
+      coCells = `<td class="num">${r.co_hn.toFixed(1)}</td><td class="num"${diffClass ? ` style="color:var(--${diffClass === "up" ? "accent" : "down"})"` : ""}>${fmtPct(diff)}</td>`;
+    }
+    return `<tr>
+      <td>${r.store}</td>
+      <td class="num">${fmt$(r.sales)}</td>
+      <td class="num">${fmtPctPlain(r.ideal_pct)}</td>
+      <td class="num">${fmt$(r.ideal_dollar)}</td>
+      <td class="num">${r.hours.toFixed(1)}</td>
+      <td class="num">${fmt$(r.splh)}</td>
+      ${coCells}
+    </tr>`;
+  }).join("");
+  const laborTot = {
+    sales: laborRows.reduce((s, r) => s + r.sales, 0),
+    ideal_dollar: laborRows.reduce((s, r) => s + r.ideal_dollar, 0),
+    hours: laborRows.reduce((s, r) => s + r.hours, 0),
+    co_hn: hasCo ? laborRows.reduce((s, r) => s + r.co_hn, 0) : null,
+  };
+  let laborTotCoCells = "";
+  if (hasCo) {
+    const diffTot = laborTot.hours / laborTot.co_hn - 1;
+    const diffClass = Math.abs(diffTot) < 0.02 ? "" : (diffTot >= 0 ? "up" : "down");
+    laborTotCoCells = `<td class="num">${laborTot.co_hn.toFixed(1)}</td><td class="num"${diffClass ? ` style="color:var(--${diffClass === "up" ? "accent" : "down"})"` : ""}>${fmtPct(diffTot)}</td>`;
+  }
+  const laborTotHtml = `
+    <tr class="total">
+      <td>Total</td>
+      <td class="num">${fmt$(laborTot.sales)}</td>
+      <td class="num">${fmtPctPlain(laborTot.ideal_dollar / laborTot.sales)}</td>
+      <td class="num">${fmt$(laborTot.ideal_dollar)}</td>
+      <td class="num">${laborTot.hours.toFixed(1)}</td>
+      <td class="num">${fmt$(laborTot.sales / laborTot.hours)}</td>
+      ${laborTotCoCells}
+    </tr>`;
+  document.getElementById("labor-body").innerHTML = laborRowsHtml + laborTotHtml;
+  document.getElementById("labor-legend").innerHTML = hasCo
+    ? `<span>Ideal Labor $ and Hours Needed are projected from each store's own fitted relationship to sales (see workbook, "Labor Model Inputs" tab). "Co. hours needed (actual)" is the company's own scheduling figure for this week (KEYS Labor Schedule report); Diff compares our projection to it.</span>`
+    : `<span>Ideal Labor $ and Hours Needed are projected from each store's own fitted relationship to sales (see workbook, "Labor Model Inputs" tab).</span>`;
+  }
+
+  // detail table
+  const totalRow = {
+    [laKey]: rows.reduce((s, r) => s + r[laKey], 0),
+    "8-Wk Average": rows.reduce((s, r) => s + r["8-Wk Average"], 0),
+    "Linear Trend Forecast": rows.reduce((s, r) => s + r["Linear Trend Forecast"], 0),
+    "Weighted Recent Avg (last 4 wks)": rows.reduce((s, r) => s + r["Weighted Recent Avg (last 4 wks)"], 0),
+    [lyKey]: totalLY,
+    "Seasonal Forecast (LY x YoY)": rows.reduce((s, r) => s + r["Seasonal Forecast (LY x YoY)"], 0),
+    [fcKey]: totalFc,
+  };
+  const rowsHtml = rows.map((r) => `
+    <tr>
+      <td>${r["Store"]}</td>
+      <td class="num">${fmt$(r[laKey])}</td>
+      <td class="num">${fmt$(r["8-Wk Average"])}</td>
+      <td class="num">${fmt$(r["Linear Trend Forecast"])}</td>
+      <td class="num">${fmt$(r["Weighted Recent Avg (last 4 wks)"])}</td>
+      <td class="num">${fmt$(r[lyKey])}</td>
+      <td class="num" style="color:${r[yoyGrowthKey] >= 0 ? "var(--accent)" : "var(--down)"}">${fmtPct(r[yoyGrowthKey])}</td>
+      <td class="num">${fmt$(r["Seasonal Forecast (LY x YoY)"])}</td>
+      <td class="num" style="font-weight:600">${fmt$(r[fcKey])}</td>
+      <td class="num">${fmt$(r["Low Estimate (~80% range)"])}&ndash;${fmt$(r["High Estimate (~80% range)"])}</td>
+    </tr>`).join("");
+  const totalHtml = `
+    <tr class="total">
+      <td>Total</td>
+      <td class="num">${fmt$(totalRow[laKey])}</td>
+      <td class="num">${fmt$(totalRow["8-Wk Average"])}</td>
+      <td class="num">${fmt$(totalRow["Linear Trend Forecast"])}</td>
+      <td class="num">${fmt$(totalRow["Weighted Recent Avg (last 4 wks)"])}</td>
+      <td class="num">${fmt$(totalRow[lyKey])}</td>
+      <td class="num">${fmtPct(yoy)}</td>
+      <td class="num">${fmt$(totalRow["Seasonal Forecast (LY x YoY)"])}</td>
+      <td class="num">${fmt$(totalRow[fcKey])}</td>
+      <td class="num">${fmt$(totalLow)}&ndash;${fmt$(totalHigh)}</td>
+    </tr>`;
+  document.getElementById("detail-body").innerHTML = rowsHtml + totalHtml;
+}
+
+document.querySelectorAll(".weektabs button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".weektabs button").forEach((b) => {
+      b.classList.remove("active");
+      b.setAttribute("aria-selected", "false");
+    });
+    btn.classList.add("active");
+    btn.setAttribute("aria-selected", "true");
+    render(btn.dataset.week);
+  });
+});
+
+render("wk1");
+</script>
+
+</body>
+</html>
