@@ -225,6 +225,7 @@
   .cat-sports-dot { background: #d17a22; }
   .cat-school-dot { background: #2e9bb0; }
   .cat-ops-dot { background: #8a8a8a; }
+  .cat-task-dot { background: #3e6fd1; }
 
   .cal-legend {
     display: flex;
@@ -263,6 +264,8 @@
   .cal-banner.cat-school .cat-tag { color: #2e9bb0; }
   .cal-banner.cat-ops { background: rgba(120, 120, 120, 0.14); }
   .cal-banner.cat-ops .cat-tag { color: #8a8a8a; }
+  .cal-banner.cat-task { background: rgba(62, 111, 209, 0.14); }
+  .cal-banner.cat-task .cat-tag { color: #3e6fd1; }
   .cal-banner .desc { color: var(--ink); }
 
   .cal-grid {
@@ -741,9 +744,24 @@ const CALENDAR_EVENTS = {
       { col: 6, date: "10/11", cat: "Sports", text: "NFL Week 5 full Sunday slate (13 games), incl. London game (Eagles @ Jaguars, 9:30am), Ravens @ Falcons SNF (NBC), plus MLB NLCS Game 1." },
     ],
     footnote: { label: "Mon 10/12", cat: "School", text: "Student Holiday (no school) districtwide, both Okaloosa & Santa Rosa Co. — may lift the following week's daily pattern." },
-    caveat: "IMPORTANT: this week carries a sitewide 50% Off Boost Week promo (all 7 days), confirmed via a corporate marketing bulletin received 9/30 — none of the three blended signals (trend, recency, seasonal/YoY) know about this discount, so the $162,004 forecast should be treated as a floor, not a ceiling. Per the same bulletin's promo history, Domino's ran a similar 50%-off National Pizza Month promo the week of 9/30-10/6/2024, but no promo is listed for the comparable week in Oct 2025 (this forecast's YoY comparator) — so the YoY/seasonal signal almost certainly does NOT have this year's discount baked in, and the true upside could be larger than a simple YoY adjustment suggests. Separately: MLB postseason (Division Series through Oct 10, Championship Series starting Oct 11-12) overlaps this entire week alongside NFL Week 5 — a heavier sports-viewing week than the norm. Last year's comparator week fell during the 2025 ALCS/NLCS window too, so that piece is roughly comparable year over year.",
+    caveat: "",
   },
 };
+
+// Standing weekly operational tasks — the same every week, not tied to any date's news/promo/holiday.
+// Merged into every week's calendar grid at render time (col: 0=Mon .. 6=Sun), so a new week added later
+// automatically gets these without needing to be re-typed into CALENDAR_EVENTS above.
+const WEEKLY_TASKS = [
+  { col: 0, cat: "Task", text: "Makeline Monday & Forecast" },
+  { col: 1, cat: "Task", text: "Cut Test Tuesday" },
+  { col: 1, cat: "Task", text: "Finalize and Post Schedule" },
+  { col: 2, cat: "Task", text: "Customer Focus Reset (Lobby, Counters, Ledges)" },
+  { col: 2, cat: "Task", text: "Close all CCC" },
+  { col: 3, cat: "Task", text: "Speed Test & Cut Test" },
+  { col: 4, cat: "Task", text: "Close all CCC" },
+  { col: 4, cat: "Task", text: "Post approved schedule in store" },
+  { col: 6, cat: "Task", text: "Close all CCC" },
+];
 
 const fmt$ = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const fmtPct = (n) => (n >= 0 ? "+" : "") + (n * 100).toFixed(1) + "%";
@@ -828,7 +846,7 @@ function render(wkKey) {
   const dayCols = dowNames.map((dow, i) => ({
     dow,
     date: dateForCol[i],
-    events: evData.days.filter((d) => d.col === i),
+    events: evData.days.filter((d) => d.col === i).concat(WEEKLY_TASKS.filter((t) => t.col === i)),
   }));
   const banners = evData.banners
     .map((b) => `<div class="cal-banner cat-${b.cat.toLowerCase()}"><span class="cat-tag">${b.cat}</span><span class="desc">${b.text}</span></div>`)
@@ -845,6 +863,7 @@ function render(wkKey) {
   const footnote = evData.footnote
     ? `<div class="cal-footnote"><span class="cat-tag">${evData.footnote.label}</span><span class="desc">${evData.footnote.text}</span></div>`
     : "";
+  const caveatHtml = evData.caveat ? `<div class="events-caveat">${evData.caveat}</div>` : "";
   document.getElementById("events-banner").innerHTML = `
     <div class="events-title">${evData.title}</div>
     <div class="cal-legend">
@@ -853,11 +872,12 @@ function render(wkKey) {
       <span><span class="cat-dot cat-sports-dot"></span>Sports</span>
       <span><span class="cat-dot cat-school-dot"></span>School</span>
       <span><span class="cat-dot cat-ops-dot"></span>Ops</span>
+      <span><span class="cat-dot cat-task-dot"></span>Task</span>
     </div>
     <div class="cal-banners">${banners}</div>
     <div class="cal-grid">${grid}</div>
     ${footnote}
-    <div class="events-caveat">${evData.caveat}</div>
+    ${caveatHtml}
   `;
 
   // cards
