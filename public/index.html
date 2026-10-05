@@ -497,12 +497,12 @@
         <button type="button" data-theme="dark" role="tab" aria-selected="false">Dark</button>
       </div>
       <div class="weektabs" role="tablist" aria-label="Forecast week">
-        <button type="button" class="active" data-week="wk1" role="tab" aria-selected="true">Week of Sep 7</button>
+        <button type="button" data-week="wk1" role="tab" aria-selected="false">Week of Sep 7</button>
         <button type="button" data-week="wk2" role="tab" aria-selected="false">Week of Sep 14</button>
         <button type="button" data-week="wk3" role="tab" aria-selected="false">Week of Sep 21</button>
         <button type="button" data-week="wk4" role="tab" aria-selected="false">Week of Sep 28</button>
         <button type="button" data-week="wk5" role="tab" aria-selected="false">Week of Oct 5</button>
-        <button type="button" data-week="wk6" role="tab" aria-selected="false">Week of Oct 12</button>
+        <button type="button" class="active" data-week="wk6" role="tab" aria-selected="true">Week of Oct 12</button>
       </div>
     </div>
   </header>
@@ -581,7 +581,7 @@
     });
     try { localStorage.setItem("azure_forecast_theme", t); } catch (e) {}
   }
-  let initial = "light";
+  let initial = "azure";
   try {
     const saved = localStorage.getItem("azure_forecast_theme");
     if (saved && THEMES.includes(saved)) initial = saved;
@@ -1168,7 +1168,17 @@ document.querySelectorAll(".weektabs button").forEach((btn) => {
   });
 });
 
-render("wk1");
+// Default to the most recent week (the last tab in the list) on load, so the page always opens on the
+// latest forecast rather than requiring a click — no edit needed here when a new week tab is appended.
+const weekButtons = document.querySelectorAll(".weektabs button");
+const defaultWeekBtn = weekButtons[weekButtons.length - 1];
+weekButtons.forEach((b) => {
+  b.classList.remove("active");
+  b.setAttribute("aria-selected", "false");
+});
+defaultWeekBtn.classList.add("active");
+defaultWeekBtn.setAttribute("aria-selected", "true");
+render(defaultWeekBtn.dataset.week);
 </script>
 
 </body>
