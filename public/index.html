@@ -774,9 +774,11 @@ const CALENDAR_EVENTS = {
       { cat: "Promo", text: "50% Off Boost Week — sitewide 50% off menu-priced pizzas, live nationally all 7 days (per corporate marketing bulletin received 9/30)." },
       { cat: "Promo", text: "Domino's National Marketing Support Extended continues (live through 11/15) — elevated national marketing spend in-market all week." },
       { cat: "Ops", text: "Store 5161: forecast manually overridden to $32,000 (model blend was ~$28,139) — a nearby Papa John's location closed this week, and combined with Boost Week, local management expects a larger-than-modeled lift." },
+      { cat: "Ops", text: "RETROACTIVE (added 10/14): a hurricane made landfall in the area on Friday 10/9, after this forecast was built — believed to be why actuals are missing Friday 10/9 for all 6 stores and missing Sat/Sun for stores 3116, 3802, and 5161 (likely closed through the weekend). See the Forecast Accuracy Tracker and the Week of Oct 19 Forecast tab." },
     ],
     days: [
       { col: 3, date: "10/8", cat: "Sports", text: "NFL Week 5 Thursday Night Football — Buccaneers @ Cowboys (Prime Video)." },
+      { col: 4, date: "10/9", cat: "Ops", text: "Hurricane landfall in the area (identified retroactively on 10/14) — believed to be why this day's actuals are missing for all 6 stores, and Sat/Sun actuals are missing for 3116, 3802, and 5161." },
       { col: 4, date: "10/9", cat: "Sports", text: "MLB Division Series — potential decisive NLDS Game 5s." },
       { col: 5, date: "10/10", cat: "Sports", text: "MLB Division Series — potential decisive ALDS Game 5s." },
       { col: 6, date: "10/11", cat: "Sports", text: "NFL Week 5 full Sunday slate (13 games), incl. London game (Eagles @ Jaguars, 9:30am), Ravens @ Falcons SNF (NBC), plus MLB NLCS Game 1." },
@@ -807,7 +809,7 @@ const CALENDAR_EVENTS = {
   wk7: {
     title: "Week at a Glance",
     banners: [
-      { cat: "Ops", text: "A hurricane made landfall in the area the prior week (Oct 12-18) and impacted sales. No official storm name, damage, or closure data has been provided — this forecast does not attempt to quantify storm impact and instead holds the trend/seasonal training window at the last confirmed actual (week ending 10/4), projecting 3 periods ahead instead of the usual 2. Treat this week's numbers as directional." },
+      { cat: "Ops", text: "A hurricane made landfall in the area on Friday 10/9 (during the week of Oct 5-11, two weeks before this forecast week) — believed to be why that week's actuals are missing Friday for all 6 stores and missing Sat/Sun for 3116, 3802, and 5161. No official storm name, damage, or closure data has been provided — this forecast does not attempt to quantify storm impact and instead holds the trend/seasonal training window at the last confirmed actual (week ending 10/4), projecting 3 periods ahead instead of the usual 2. Treat this week's numbers as directional." },
       { cat: "Promo", text: "Domino's National Marketing Support Extended continues (live through 11/15) — elevated national marketing spend in-market all week." },
     ],
     days: [
@@ -821,7 +823,7 @@ const CALENDAR_EVENTS = {
       { col: 6, date: "10/25", cat: "Sports", text: "NFL Week 7 full Sunday slate (12 games), incl. Pittsburgh @ New Orleans in France (Stade de France, 9:30am) and Kansas City @ Seattle SNF (NBC)." },
     ],
     footnote: { label: "Mon 10/26", cat: "Sports", text: "MLB World Series Game 3 (FOX), falls just after this forecast week ends." },
-    caveat: "This forecast reflects a hurricane that made landfall the prior week (Oct 12-18) and impacted sales — no official storm name, damage, or closure data was provided, so none is assumed; the model does not attempt to quantify storm impact and instead holds the trend/seasonal training window at the last confirmed actual (week ending 10/4), projecting 3 periods ahead instead of the usual 2 (see workbook Week of Oct 19 Forecast tab, cell A2). This week also carries a heavier-than-normal sports draw — NFL Week 7 plus World Series Games 1-2 — which was a comparable overlap in last year's comparator week.",
+    caveat: "This forecast reflects a hurricane that made landfall Friday 10/9 (during the week of Oct 5-11) and impacted sales — no official storm name, damage, or closure data was provided, so none is assumed; the model does not attempt to quantify storm impact and instead holds the trend/seasonal training window at the last confirmed actual (week ending 10/4), projecting 3 periods ahead instead of the usual 2 (see workbook Week of Oct 19 Forecast tab, cell A2). This week also carries a heavier-than-normal sports draw — NFL Week 7 plus World Series Games 1-2 — which was a comparable overlap in last year's comparator week.",
   },
 };
 
