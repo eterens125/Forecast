@@ -547,7 +547,8 @@
             <th>LY same wk</th>
             <th>YoY</th>
             <th>Seasonal fc.</th>
-            <th>Forecast</th>
+            <th>Blend-of-3<br><span style="font-weight:400;text-transform:none;font-size:10px">baseline</span></th>
+            <th>Weekly total</th>
             <th>Low&ndash;High</th>
           </tr>
         </thead>
@@ -908,9 +909,16 @@ function render(wkKey) {
   const laKey = LAST_ACTUAL_KEY[wkKey];
   const laLabel = LAST_ACTUAL_LABEL[wkKey];
   const yoyGrowthKey = YOY_GROWTH_KEY[wkKey];
+  const dayKeys = WEEKDAY_KEYS[wkKey];
+  // True weekly total = sum of the 7 daily forecast cells. This matches the Labor Plan tab and is
+  // usually identical to r[fcKey] (the Blend-of-3 baseline) — except in a week like Oct 26, where a
+  // day-specific adjustment (e.g. Halloween's per-store multiplier on Saturday) is layered onto one
+  // day only and never written back into the Blend-of-3 baseline. Using this sum (rather than
+  // r[fcKey]) everywhere a "Total" is shown keeps this dashboard consistent with Labor Plan.
+  const trueTotal = (r) => dayKeys.reduce((s, k) => s + r[k], 0);
 
   // summary tiles
-  const totalFc = rows.reduce((s, r) => s + r[fcKey], 0);
+  const totalFc = rows.reduce((s, r) => s + trueTotal(r), 0);
   const totalLow = rows.reduce((s, r) => s + r["Low Estimate (~80% range)"], 0);
   const totalHigh = rows.reduce((s, r) => s + r["High Estimate (~80% range)"], 0);
   const totalLY = rows.reduce((s, r) => s + r[lyKey], 0);
@@ -1000,7 +1008,7 @@ function render(wkKey) {
         <span class="badge ${tClass}">${tLabel}</span>
       </div>
       <div class="forecast-row">
-        <span class="forecast-num num">${fmt$(r[fcKey])}</span>
+        <span class="forecast-num num">${fmt$(trueTotal(r))}</span>
         <span class="yoy num ${yoyVal >= 0 ? "up" : "down"}">${fmtPct(yoyVal)} YoY</span>
       </div>
       <div class="range-line num">Range ${fmt$(r["Low Estimate (~80% range)"])}&ndash;${fmt$(r["High Estimate (~80% range)"])}</div>
@@ -1021,7 +1029,6 @@ function render(wkKey) {
   }).join("");
 
   // daily forecast table
-  const dayKeys = WEEKDAY_KEYS[wkKey];
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const dayDates = dayKeys.map((k) => k.split(" ")[1]);
   document.getElementById("daily-head").innerHTML = `
@@ -1054,14 +1061,14 @@ function render(wkKey) {
     const reportedKeys = dayKeys.filter((k) => storeActuals[k] !== undefined);
     let totalCell;
     if (reportedKeys.length === 0) {
-      totalCell = `<td class="num" style="font-weight:600">${fmt$(r[fcKey])}</td>`;
+      totalCell = `<td class="num" style="font-weight:600">${fmt$(trueTotal(r))}</td>`;
     } else {
       const actualToDate = reportedKeys.reduce((s, k) => s + storeActuals[k], 0);
       const fcToDate = reportedKeys.reduce((s, k) => s + r[k], 0);
       const totalVariance = actualToDate / fcToDate - 1;
       const totalVClass = totalVariance >= 0 ? "up" : "down";
       totalCell = `<td class="num daycell" style="font-weight:600">
-        <div class="fc-val">fc ${fmt$(r[fcKey])}</div>
+        <div class="fc-val">fc ${fmt$(trueTotal(r))}</div>
         <div class="actual-val">${fmt$(actualToDate)}${reportedKeys.length < dayKeys.length ? " to date" : ""}</div>
         <div class="variance ${totalVClass}">${fmtPct(totalVariance)}</div>
       </td>`;
@@ -1182,7 +1189,7 @@ function render(wkKey) {
     "Weighted Recent Avg (last 4 wks)": rows.reduce((s, r) => s + r["Weighted Recent Avg (last 4 wks)"], 0),
     [lyKey]: totalLY,
     "Seasonal Forecast (LY x YoY)": rows.reduce((s, r) => s + r["Seasonal Forecast (LY x YoY)"], 0),
-    [fcKey]: totalFc,
+    [fcKey]: rows.reduce((s, r) => s + r[fcKey], 0),
   };
   const rowsHtml = rows.map((r) => `
     <tr>
@@ -1194,7 +1201,8 @@ function render(wkKey) {
       <td class="num">${fmt$(r[lyKey])}</td>
       <td class="num" style="color:${r[yoyGrowthKey] >= 0 ? "var(--accent)" : "var(--down)"}">${fmtPct(r[yoyGrowthKey])}</td>
       <td class="num">${fmt$(r["Seasonal Forecast (LY x YoY)"])}</td>
-      <td class="num" style="font-weight:600">${fmt$(r[fcKey])}</td>
+      <td class="num">${fmt$(r[fcKey])}</td>
+      <td class="num" style="font-weight:600">${fmt$(trueTotal(r))}</td>
       <td class="num">${fmt$(r["Low Estimate (~80% range)"])}&ndash;${fmt$(r["High Estimate (~80% range)"])}</td>
     </tr>`).join("");
   const totalHtml = `
@@ -1208,6 +1216,7 @@ function render(wkKey) {
       <td class="num">${fmtPct(yoy)}</td>
       <td class="num">${fmt$(totalRow["Seasonal Forecast (LY x YoY)"])}</td>
       <td class="num">${fmt$(totalRow[fcKey])}</td>
+      <td class="num" style="font-weight:600">${fmt$(totalFc)}</td>
       <td class="num">${fmt$(totalLow)}&ndash;${fmt$(totalHigh)}</td>
     </tr>`;
   document.getElementById("detail-body").innerHTML = rowsHtml + totalHtml;
